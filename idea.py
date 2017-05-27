@@ -4,6 +4,7 @@ from gi.repository import Gtk
 from physt.io import load_json
 from functools import lru_cache
 import os
+from time import time
 
 class IdeaWin(Gtk.Window):
     def __init__(self):
@@ -50,6 +51,7 @@ class IdeaWin(Gtk.Window):
         self.show_all()
         
     def on_click(self, widget, coords, wobble):
+        time_s = time()
         dir_num = coords[0]
         file_num = coords[1]
 
@@ -62,14 +64,26 @@ class IdeaWin(Gtk.Window):
         path = os.path.join("data", path)
         files = os.listdir(path)
         path = os.path.join(path, files[file_num])
+        time_s = time() - time_s
+        print("Loading: ", time_s)
+        time_s = time()
+        self.scrolledwindow.remove(self.canvas)
 
         self.fig = Figure(figsize=(5,5), dpi=100)
         self.fig.ax = self.fig.add_subplot(111)
+        time_s = time() - time_s
+        print("Refiguring: ", time_s)
+        time_s = time()
 
-        plot(self.fig.ax)
+        plot(self.fig.ax, path=path)
+        time_s = time() - time_s
+        print("Replotting: ", time_s)
+        time_s = time()
         self.canvas = FigureCanvas(self.fig)
         self.scrolledwindow.add(self.canvas)
         self.show_all()
+        time_s = time() - time_s
+        print("Showing: ", time_s)
 
 @lru_cache(1)
 def read_data(path):
