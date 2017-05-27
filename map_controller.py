@@ -39,11 +39,11 @@ class MapController:
         return self.process
 
     def input_thread(self):
+        self.ensure_process()
         self.start_lock.release()
         try:
             while True:
                 try:
-                    self.ensure_process()
                     line = self.process_stdout.readline()
                     if not line:
                         return
