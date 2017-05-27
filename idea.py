@@ -20,23 +20,31 @@ class IdeaWin(Gtk.Window):
         self.grid = Gtk.Grid()
         self.add(self.grid)
 
+        self.toolbox = Gtk.Box()
+        self.grid.attach(self.toolbox, 0, 0, 7, 1)
+
+        button1 = Gtk.RadioButton.new_from_widget(None)
+        button1.set_label("Single sensor")
+        button1.connect("toggled", self.on_button_toggled, "1")
+        self.toolbox.pack_start(button1, False, False, 0)
+
+        button2 = Gtk.RadioButton.new_from_widget(button1)
+        button2.set_label("Filters")
+        button2.connect("toggled", self.on_button_toggled, "2")
+        self.toolbox.pack_start(button2, False, False, 0)
+
+        button3 = Gtk.RadioButton.new_from_widget(button1)
+        button3.set_label("Comparison")
+        button3.connect("toggled", self.on_button_toggled, "3")
+        self.toolbox.pack_start(button3, False, False, 0)
+
+        self.map_button = Gtk.Button(label="Open Map")
+        self.map_button.connect("clicked", self.on_map_button_clicked)
+        self.toolbox.pack_end(self.map_button, False, True, 0)
+
         self.scrolledwindow_opts = Gtk.ScrolledWindow()
         self.scrolledwindow_opts.set_hexpand(True)
         self.scrolledwindow_opts.set_vexpand(True)
-        self.grid.attach(self.scrolledwindow_opts, 0, 0, 1, 1)
-
-        self.listbox = Gtk.ListBox()
-        self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
-        self.scrolledwindow_opts.add(self.listbox)
-
-        self.x_control_row = Gtk.ListBoxRow()
-        self.x_control_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.x_control_row.add(self.x_control_hbox)
-
-        self.listbox.add(self.x_control_row)
-
-        self.x_control_label = Gtk.Label("X axis:")
-        self.x_control_hbox.pack_start(self.x_control_label, True, True, 0)
 
         interval_store = Gtk.ListStore(str)
         intervals = ["hour", "month"]
@@ -51,18 +59,10 @@ class IdeaWin(Gtk.Window):
         self.interval_combo.pack_start(self.renderer_text, True)
         self.interval_combo.add_attribute(self.renderer_text, "text", 0)
 
-        self.x_control_hbox.pack_end(self.interval_combo, True, True, 5)
-
-        self.map_button = Gtk.Button(label="Open Map")
-        self.map_button.connect("clicked", self.on_map_button_clicked)
-        self.map_row = Gtk.ListBoxRow()
-        self.map_row.add(self.map_button)
-        self.listbox.add(self.map_row)
-
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_hexpand(True)
         self.scrolledwindow.set_vexpand(True)
-        self.grid.attach(self.scrolledwindow, 1, 0, 5, 1)
+        self.grid.attach(self.scrolledwindow, 1, 1, 6, 1)
         self.path = "data/Staré Brno/vsleistr.json"
         self._plot_to_file()
         self.img = Gtk.Image.new_from_file('output.svg')
@@ -92,7 +92,7 @@ class IdeaWin(Gtk.Window):
         self.scrolledwindow_tree.set_hexpand(True)
         self.scrolledwindow_tree.set_vexpand(True)
 
-        self.grid.attach(self.scrolledwindow_tree, 7, 0, 1, 1)
+        self.grid.attach(self.scrolledwindow_tree, 7, 1, 1, 1)
         self.scrolledwindow_tree.add(self.filesystemTreeView)
         self.filesystemTreeView.connect("row-activated", self.on_click)
 
@@ -125,6 +125,9 @@ class IdeaWin(Gtk.Window):
             click_callback=lambda data: print('gtk got:', data),
         )
         map_controller.send_command(cmd='start')
+
+    def on_button_toggled(self, widget, name):
+        pass
 
     def on_interval_combo_changed(self, combo):
         tree_iter = combo.get_active_iter()
