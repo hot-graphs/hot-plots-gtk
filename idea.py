@@ -10,7 +10,7 @@ from time import time
 
 class IdeaWin(Gtk.Window):
     def __init__(self):
-        super().__init__()
+        super().__init__(title="Hot Plots")
         self.connect("delete-event", Gtk.main_quit)
         self.set_default_size(1280, 720)
         self.grid = Gtk.Grid()
@@ -26,17 +26,23 @@ class IdeaWin(Gtk.Window):
         self.show_all()
 
         filesystemTreeStore = Gtk.TreeStore(str)
-        self.parents = {}
+        parents = {}
+        self.paths = []
 
         for (path, dirs, files) in os.walk("data"):
+            print(path)
+            print(dirs)
+            print(files)
             for subdir in dirs:
-                self.parents[os.path.join(path, subdir)] = filesystemTreeStore.append(self.parents.get(path, None), [subdir])
+                parents[os.path.join(path, subdir)] = filesystemTreeStore.append(parents.get(path, None), [subdir])
             for item in files:
-                filesystemTreeStore.append(self.parents.get(path, None), [item])
+                filesystemTreeStore.append(parents.get(path, None), [item])
+            self.paths.append((path, dirs, files))
+
 
         self.filesystemTreeView = Gtk.TreeView(filesystemTreeStore)
         renderer = Gtk.CellRendererText()
-        filesystemColumn = Gtk.TreeViewColumn("Title", renderer, text=0)
+        filesystemColumn = Gtk.TreeViewColumn("Files", renderer, text=0)
         self.filesystemTreeView.append_column(filesystemColumn)
 
         self.scrolledwindow_tree = Gtk.ScrolledWindow()
@@ -64,7 +70,10 @@ class IdeaWin(Gtk.Window):
         path = os.path.join("data", path)
         files = os.listdir(path)
         path = os.path.join(path, files[file_num])
+
+
         time_s = time() - time_s
+        print("Searching: ", time_s)
         time_s = time()
         self.scrolledwindow.remove(self.scrolledwindow.get_child())
         time_s = time()
