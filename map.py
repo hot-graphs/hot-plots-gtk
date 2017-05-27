@@ -192,6 +192,7 @@ class MapViewApp(App):
     def do_input(self):
         for line in sys.stdin:
             try:
+                print('map: got ', line, file=sys.stderr)
                 data = json.loads(line)
                 cmd = data['cmd']
                 self.handle_command(cmd, data)
@@ -201,7 +202,7 @@ class MapViewApp(App):
     def handle_command(self, cmd, data):
         if cmd == 'stop':
             self.stop()
-        if cmd == 'pos':
+        elif cmd == 'pos':
             # {"cmd": "center", "lat": 0, "long": 0, "zoom": 1}
             if 'zoom' in data:
                 self.mapview.zoom = int(data['zoom'])
