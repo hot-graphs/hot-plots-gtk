@@ -3,6 +3,7 @@ from time import time
 import matplotlib.pyplot as plt
 from functools import lru_cache
 import pandas as pd
+from collections import OrderedDict
 
 CSV_FILE = "Adresace_zdroju_s_GPS_vysky_parsed.csv"
 
@@ -41,6 +42,22 @@ def get_point_meta_data(id):
         return get_all_point_metadata(path=CSV_FILE).loc[id]
     except KeyError:
         raise RuntimeError("Point {0} not in the database.".format(id))
+
+@lru_cache(1)    
+def get_point_tree():
+    """Tree city part/points in it
+    
+    Returns
+    -------
+    tree : OrderedDict[DataFrame]
+        Keys of the dictionary are the city parts.
+        Values are full tables of points.
+    """
+    data = get_all_point_metadata()
+    result = OrderedDict()
+    for part in sorted(data["Městská část"].unique()):
+        result[part] = data[data["Městská část"] == part]
+    return result
     
 @lru_cache(20)
 def find_points(address):
@@ -56,6 +73,8 @@ def find_points(address):
 
 def read_data(path="data/Vinohrady.json"):
     return load_json(path)
+    
+# def get_temperature_data(path, id=None, axes=("hour", "temperature")):    
 
 def plot_to_axis(source, ax, x="hodina", y="teplota"):
     hist = read_data(source)
