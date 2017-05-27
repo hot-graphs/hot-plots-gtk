@@ -1,4 +1,4 @@
-#encoding: utf-8
+#! /usr/bin/env python3
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_gtk3cairo import FigureCanvasGTK3Cairo as FigureCanvas
