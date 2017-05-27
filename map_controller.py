@@ -1,0 +1,56 @@
+import threading
+import subprocess
+import json
+import sys
+import traceback
+import io
+
+from gi.repository import GLib
+
+class MapController:
+    def __init__(self, click_callback=None):
+        self.process = None
+        self.click_callback = click_callback
+
+        thread = threading.Thread(target=self.input_thread)
+        thread.daemon = True
+        thread.start()
+
+    def send_command(self, **kwargs):
+        proc = self.ensure_process()
+        json.dump(kwargs, self.process_stdin)
+        self.process_stdin.flush()
+
+    def ensure_process(self):
+        if not self.process:
+            self.process = subprocess.Popen(
+                [sys.executable, '-m', 'map'],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+            )
+            self.process_stdin = io.TextIOWrapper(self.process.stdin)
+            self.process_stdout = io.TextIOWrapper(self.process.stdout)
+        return self.process
+
+    def input_thread(self):
+        try:
+            while True:
+                try:
+                    self.ensure_process()
+                    line = self.process_stdout.readline()
+                    if not line:
+                        return
+                except (BrokenPipeError, EOFError):
+                    return
+                try:
+                    data = json.loads(line)
+                    cmd = data['cmd']
+                    if cmd == 'point_selected':
+                        if self.click_callback:
+                            GLib.idle_add(self.click_callback, data['row'])
+                    else:
+                        print('controller: ignoring line:', data)
+                except Exception:
+                    traceback.print_exc()
+        finally:
+            self.process = None
