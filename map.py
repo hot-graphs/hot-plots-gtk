@@ -183,6 +183,7 @@ def send_command(**kwargs):
 
 class MapViewApp(App):
     def __init__(self, points, radiuses, columns, *args, **kwargs):
+        kwargs.setdefault('icon', 'logo.png')
         super().__init__(*args, **kwargs)
         self.points = points
         self.radiuses = radiuses
