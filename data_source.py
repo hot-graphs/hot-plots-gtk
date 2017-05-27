@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 from functools import lru_cache
 import pandas as pd
 from collections import OrderedDict
+from czech_sort import sorted as czech_sorted
+import os
+
 
 CSV_FILE = "Adresace_zdroju_s_GPS_vysky_parsed.csv"
 
@@ -22,14 +25,23 @@ def get_all_point_metadata(path=CSV_FILE):
 
 @lru_cache(1)
 def get_available_points():
-    """All available point ids
+    """All available point ids (with temperature data).
     
     Returns
     -------
     ids : list
     """
     data = get_all_point_metadata(path=CSV_FILE)
-    return sorted(list(data.index))
+    return sorted([i for i in data.index if has_data(i)])
+    
+def has_data(id):
+    """Whether data for a point identifier do exist.
+    
+    Returns
+    -------
+    bool
+    """
+    return os.path.exists(os.path.join("data", "{0}.json".format(id)))
     
 def get_point_meta_data(id):
     """Meta-data for one specific measure point.
@@ -45,7 +57,7 @@ def get_point_meta_data(id):
 
 @lru_cache(1)    
 def get_point_tree():
-    """Tree city part/points in it
+    """Tree city part/points in it.
     
     Returns
     -------
@@ -53,9 +65,11 @@ def get_point_tree():
         Keys of the dictionary are the city parts.
         Values are full tables of points.
     """
+    available = get_available_points()
     data = get_all_point_metadata()
+    data = data.loc[available]
     result = OrderedDict()
-    for part in sorted(data["Městská část"].unique()):
+    for part in czech_sorted(data["Městská část"].unique()):
         result[part] = data[data["Městská část"] == part]
     return result
     
