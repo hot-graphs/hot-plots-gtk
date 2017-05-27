@@ -158,7 +158,8 @@ def get_temperature_data(id=None, address=None, altitude_range=None, greenery_ra
         data = data.projection(*axes)
     return data
 
-def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800):
+
+def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800, histtype=None):
     """Plot histogram data.
     
     Parameters
@@ -178,7 +179,9 @@ def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800)
         fig, ax = plt.subplots(figsize=(10, ysize/xsize * 10))
     else:
         fig = ax.figure
-    histogram.plot(ax=ax)
+    if histtype is None:
+        histtype = ["bar", "image"][histogram.ndim - 1]
+    histogram.plot(histtype=histtype, ax=ax)
     ax.set_ylim(-20, 40)
     if path:
         fig.tight_layout()
