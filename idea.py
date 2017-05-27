@@ -20,12 +20,10 @@ class IdeaWin(Gtk.Window):
         self.scrolledwindow.set_vexpand(True)
         self.grid.attach(self.scrolledwindow, 0, 0, 6, 1)
 
-        self.fig = Figure(figsize=(5,5), dpi=100)
-        self.fig.ax = self.fig.add_subplot(111)
-
-        plot(self.fig.ax)
-        self.canvas = FigureCanvas(self.fig)
-        self.scrolledwindow.add(self.canvas)
+        plot_to_file("data/Staré Brno/vsleistr.json")
+        self.img = Gtk.Image.new_from_file('output.svg')
+        self.scrolledwindow.add(self.img)
+        self.show_all()
 
         filesystemTreeStore = Gtk.TreeStore(str)
         self.parents = {}
@@ -68,7 +66,7 @@ class IdeaWin(Gtk.Window):
         path = os.path.join(path, files[file_num])
         time_s = time() - time_s
         time_s = time()
-        self.scrolledwindow.remove(self.canvas)
+        self.scrolledwindow.remove(self.img)
         time_s = time()
 
         plot_to_file(path)
@@ -76,7 +74,7 @@ class IdeaWin(Gtk.Window):
         print("Replotting: ", time_s)
         time_s = time()
 
-        self.img = Gtk.Image.new_from_file('output.png')
+        self.img = Gtk.Image.new_from_file('output.svg')
         self.scrolledwindow.add(self.img)
         self.show_all()
         time_s = time() - time_s
@@ -90,7 +88,7 @@ def plot(ax, x="temperature", y="hour", path="data/Staré Brno/vsleistr.json"):
     projection = hist.projection(x, y)
     projection.plot(ax=ax)
 
-def plot_to_file(source, path="output.png", x="hour", y="temperature", dpi=300):
+def plot_to_file(source, path="output.svg", x="hour", y="temperature", dpi=300):
     hist = read_data(source)
     projection = hist.projection(x, y)
     fig, ax = plt.subplots()
@@ -106,7 +104,6 @@ def plot_to_file(source, path="output.png", x="hour", y="temperature", dpi=300):
 
 def main():
     win = IdeaWin()
-    win.connect("delete-event", Gtk.main_quit)
     Gtk.main()
 
 if __name__ == "__main__":
