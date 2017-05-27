@@ -7,6 +7,7 @@ from gi.repository import GObject
 from physt.io import load_json
 import os
 from time import time
+from data_source import get_point_tree
 
 
 class IdeaWin(Gtk.Window):
@@ -61,27 +62,30 @@ class IdeaWin(Gtk.Window):
         self.scrolledwindow.set_hexpand(True)
         self.scrolledwindow.set_vexpand(True)
         self.grid.attach(self.scrolledwindow, 1, 0, 5, 1)
-        self.path = "data/Staré Brno/vsleistr.json"
+        self.path = "data/vsleistr.json"
         self._plot_to_file()
         self.img = Gtk.Image.new_from_file('output.svg')
         self.scrolledwindow.add(self.img)
 
-        filesystemTreeStore = Gtk.TreeStore(str)
+        self.filesystemTreeStore = Gtk.TreeStore(str, str)
         parents = {}
-        self.paths = []
+        # self.paths = []
 
-        for (path, dirs, files) in os.walk("data"):
+        for part, points in get_point_tree().items():
+            
+        # for (path, dirs, files) in os.walk("data"):
             #print(path)
             #print(dirs)
             #print(files)
-            for subdir in dirs:
-                parents[os.path.join(path, subdir)] = filesystemTreeStore.append(parents.get(path, None), [subdir])
-            for item in files:
-                filesystemTreeStore.append(parents.get(path, None), [item])
-            self.paths.append((path, dirs, files))
+            parents[part] = self.filesystemTreeStore.append(None, [part, None])
+            for point in points.iterrows():
+                self.filesystemTreeStore.append(parents.get(part, None), [point[1]["Adresa"], str(point[0])])
+            #for item in files:
+            
+            # self.paths.append((path, dirs, files))
 
 
-        self.filesystemTreeView = Gtk.TreeView(filesystemTreeStore)
+        self.filesystemTreeView = Gtk.TreeView(self.filesystemTreeStore)
         renderer = Gtk.CellRendererText()
         filesystemColumn = Gtk.TreeViewColumn("Files", renderer, text=0)
         self.filesystemTreeView.append_column(filesystemColumn)
@@ -140,21 +144,12 @@ class IdeaWin(Gtk.Window):
             self._replot()
 
     def on_click(self, widget, coords, wobble):
-        time_s = time()
-        dir_num = coords[0]
-        file_num = coords[1]
-
-        dirs = []
-        for item in os.listdir("data"):
-            if os.path.isdir(os.path.join("data", item)):
-                dirs.append(item)
-
-        path = dirs[dir_num]
-        path = os.path.join("data", path)
-        files = os.listdir(path)
-        path = os.path.join(path, files[file_num])
-        self.path = path
-        self._replot()
+        time_s = time
+        id_ = self.filesystemTreeStore.get(self.filesystemTreeStore.get_iter(coords), 1)[0]
+        # TODO: replot...
+        #dir_num = coords[0]
+        #file_num = coords[1]
+        # print(coords)
 
 def read_data(path):
     return load_json(path)
