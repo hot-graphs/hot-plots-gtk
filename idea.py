@@ -1,3 +1,4 @@
+#encoding: utf-8
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_gtk3cairo import FigureCanvasGTK3Cairo as FigureCanvas
 from gi.repository import Gtk
@@ -5,6 +6,7 @@ from physt.io import load_json
 from functools import lru_cache
 import os
 from time import time
+
 
 class IdeaWin(Gtk.Window):
     def __init__(self):
@@ -85,7 +87,6 @@ class IdeaWin(Gtk.Window):
         time_s = time() - time_s
         print("Showing: ", time_s)
 
-@lru_cache(1)
 def read_data(path):
     return load_json(path)
 
@@ -93,6 +94,8 @@ def plot(ax, x="temperature", y="hour", path="data/Staré Brno/vsleistr.json"):
     hist = read_data(path)
     projection = hist.projection(x, y)
     projection.plot(ax=ax)
+
+
 
 def main():
     win = IdeaWin()
