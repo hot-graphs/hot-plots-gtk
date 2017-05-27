@@ -1,9 +1,9 @@
 #encoding: utf-8
+import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_gtk3cairo import FigureCanvasGTK3Cairo as FigureCanvas
 from gi.repository import Gtk
 from physt.io import load_json
-from functools import lru_cache
 import os
 from time import time
 
@@ -20,12 +20,10 @@ class IdeaWin(Gtk.Window):
         self.scrolledwindow.set_vexpand(True)
         self.grid.attach(self.scrolledwindow, 0, 0, 6, 1)
 
-        self.fig = Figure(figsize=(5,5), dpi=100)
-        self.fig.ax = self.fig.add_subplot(111)
-
-        plot(self.fig.ax)
-        self.canvas = FigureCanvas(self.fig)
-        self.scrolledwindow.add(self.canvas)
+        plot_to_file("data/Staré Brno/vsleistr.json")
+        self.img = Gtk.Image.new_from_file('output.svg')
+        self.scrolledwindow.add(self.img)
+        self.show_all()
 
         filesystemTreeStore = Gtk.TreeStore(str)
         self.parents = {}
@@ -67,22 +65,17 @@ class IdeaWin(Gtk.Window):
         files = os.listdir(path)
         path = os.path.join(path, files[file_num])
         time_s = time() - time_s
-        print("Loading: ", time_s)
         time_s = time()
-        self.scrolledwindow.remove(self.canvas)
-
-        self.fig = Figure(figsize=(5,5), dpi=100)
-        self.fig.ax = self.fig.add_subplot(111)
-        time_s = time() - time_s
-        print("Refiguring: ", time_s)
+        self.scrolledwindow.remove(self.scrolledwindow.get_child())
         time_s = time()
 
-        plot(self.fig.ax, path=path)
+        plot_to_file(path)
         time_s = time() - time_s
         print("Replotting: ", time_s)
         time_s = time()
-        self.canvas = FigureCanvas(self.fig)
-        self.scrolledwindow.add(self.canvas)
+
+        self.img = Gtk.Image.new_from_file('output.svg')
+        self.scrolledwindow.add(self.img)
         self.show_all()
         time_s = time() - time_s
         print("Showing: ", time_s)
@@ -95,11 +88,22 @@ def plot(ax, x="temperature", y="hour", path="data/Staré Brno/vsleistr.json"):
     projection = hist.projection(x, y)
     projection.plot(ax=ax)
 
+def plot_to_file(source, path="output.svg", x="hour", y="temperature", dpi=300):
+    hist = read_data(source)
+    projection = hist.projection(x, y)
+    fig, ax = plt.subplots()
+    t = time()
+    projection.plot("image", ax=ax)
+    # print("plotting", time() - t)
+    t = time()
+    fig.tight_layout()
+    fig.savefig(path, dpi=dpi)
+    # print("saving", time() - t)
+
 
 
 def main():
     win = IdeaWin()
-    win.connect("delete-event", Gtk.main_quit)
     Gtk.main()
 
 if __name__ == "__main__":
