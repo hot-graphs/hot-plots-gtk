@@ -10,6 +10,7 @@ import os
 
 CSV_FILE = "Adresace_zdroju_s_GPS_vysky_parsed.csv"
 
+
 @lru_cache(1)
 def get_all_point_metadata(path=CSV_FILE):
     """Cached reading of the master measure point table.
@@ -22,6 +23,7 @@ def get_all_point_metadata(path=CSV_FILE):
     data["id"] = data["Systém"].str.lower()
     data.set_index("id", inplace=True)
     return data
+    
 
 @lru_cache(1)
 def get_available_points():
@@ -34,6 +36,7 @@ def get_available_points():
     data = get_all_point_metadata(path=CSV_FILE)
     return sorted([i for i in data.index if has_data(i)])
     
+    
 def has_data(id):
     """Whether data for a point identifier do exist.
     
@@ -42,6 +45,7 @@ def has_data(id):
     bool
     """
     return os.path.exists(os.path.join("data", "{0}.json".format(id)))
+
     
 def get_point_meta_data(id):
     """Meta-data for one specific measure point.
@@ -54,6 +58,7 @@ def get_point_meta_data(id):
         return get_all_point_metadata(path=CSV_FILE).loc[id]
     except KeyError:
         raise RuntimeError("Point {0} not in the database.".format(id))
+        
 
 @lru_cache(1)    
 def get_point_tree():
@@ -73,27 +78,55 @@ def get_point_tree():
         result[part] = data[data["Městská část"] == part]
     return result
     
+    
 @lru_cache(20)
-def find_points(address):
-    """All points at an address
+def find_points(address=None, altitude_range=None):
+    """All points at an address.
     
     Returns
     -------
     points : pd.DataFrame
         Empty or non-empty
     """
-    data = get_all_point_metadata(path=CSV_FILE)
-    return data[data["Adresa"] == address]
+    data = get_all_point_metadata()
+    if address:
+        data = data[data["Adresa"] == address]
+    if altitude_range:
+        data = data[(data["vyska"] >= altitude_range[0]) & (data["vyska"] <= altitude_range[1])]
+    available = get_available_points()
+    data = data.loc[set(available) & set(data.index)]
+    return data
+    
 
-def read_data(path="data/Vinohrady.json"):
+def read_data(id):
+    """Read the full histogram for a point.
+    
+    Returns
+    -------
+    h : physt.histogram_nd.HistogramND
+    """
+    path = os.path.join("data", "{0}.json".format(id))
     return load_json(path)
     
-# def get_temperature_data(path, id=None, axes=("hour", "temperature")):    
+    
+def get_temperature_data(id=None, altitude_range=None, axes=("hour", "temperature")):
+    # Select data
+    if id:
+        data = read_data(id)
+    else:
+        points = find_points(altitude_range=altitude_range)
+        histograms = [read_data(id_) for id_ in points.index]
+        data = sum(histograms)
+        
+    data = data.projection(*axes)
+    return data
+        
 
 def plot_to_axis(source, ax, x="hodina", y="teplota"):
     hist = read_data(source)
     projection = hist.projection(x, y)
     projection.plot(ax = ax)
+    
     
 def plot_to_file(source, path="output.png", x="hodina", y="teplota", xsize=1024, ysize=800):
     hist = read_data(source)
