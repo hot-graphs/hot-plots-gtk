@@ -66,7 +66,7 @@ class IdeaWin(Gtk.Window):
         path = os.path.join(path, files[file_num])
         time_s = time() - time_s
         time_s = time()
-        self.scrolledwindow.remove(self.img)
+        self.scrolledwindow.remove(self.scrolledwindow.get_child())
         time_s = time()
 
         plot_to_file(path)
@@ -75,7 +75,7 @@ class IdeaWin(Gtk.Window):
         time_s = time()
 
         self.img = Gtk.Image.new_from_file('output.svg')
-        self.scrolled_window.remove(self.scrolled_window.get_child())
+        self.scrolledwindow.add(self.img)
         self.show_all()
         time_s = time() - time_s
         print("Showing: ", time_s)
