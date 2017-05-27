@@ -49,6 +49,14 @@ class CustomMapView(MapView):
             zoom=self.send_position,
         )
 
+        self.shade_widget = Widget()
+        Widget.add_widget(self, self.shade_widget, index=1)
+        with self.shade_widget.canvas:
+            self.shade_color = graphics.Color(0, 0, 0, 0)
+            graphics.PushMatrix()
+            self.radius_circles = [graphics.Ellipse() for i in range(3)]
+            graphics.PopMatrix()
+
     def on_touch_down(self, touch):
         touch.dz = -touch.dz
         print(self.get_latlon_at(*touch.pos), file=sys.stderr)
@@ -66,6 +74,9 @@ class CustomMapView(MapView):
                 cmd='point_selected',
                 row=data,
             )
+            self.shade_color.rgba = 1, 1, 1, 0.3
+        else:
+            self.shade_color.rgba = 1, 0, 0, 0
 
     def send_position(self, *args):
         send_command(
@@ -87,6 +98,7 @@ class CustomMapMarker(MapMarker):
         self.anchor_y = 0
         self.radius = 20
         self.size = self.radius * 2, self.radius * 2
+        self.active = False
 
         self.canvas.clear()
 
@@ -129,12 +141,7 @@ class CustomMapMarker(MapMarker):
     def set_active(self, active):
         self.canvas.before.clear()
         self.radius_circles = None
-        if active:
-            with self.canvas.before:
-                graphics.PushMatrix()
-                graphics.Color(1, 0, 0, 0.1)
-                self.radius_circles = [graphics.Ellipse() for i in self.radiuses]
-                graphics.PopMatrix()
+        self.active = active
         self.reposition()
 
     def collide_point(self, x, y):
@@ -156,11 +163,11 @@ class CustomMapMarker(MapMarker):
 
     def reposition(self, *args):
         self.translation.xy = self.pos
-        if self.radius_circles:
+        if self.active:
             mapview = self.get_mapview()
             if mapview is None:
                 return
-            for i, (r, circle) in enumerate(zip(self.radiuses, self.radius_circles)):
+            for i, (r, circle) in enumerate(zip(self.radiuses, mapview.radius_circles)):
                 ry = float(r)
                 rx = ry * X_STRETCH
                 xm, ym, = mapview.get_window_xy_from(self.lat, self.lon, zoom=mapview.zoom)
