@@ -25,7 +25,7 @@ class MapController:
     def send_command(self, **kwargs):
         proc = self.ensure_process()
         json.dump(kwargs, self.process_stdin)
-        self.process_stdin.flush()
+        print(file=self.process_stdin, flush=True)
 
     def send_command_if_open(self, **kwargs):
         with self.start_lock:
