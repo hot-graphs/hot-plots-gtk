@@ -75,7 +75,7 @@ class IdeaWin(Gtk.Window):
         time_s = time()
 
         self.img = Gtk.Image.new_from_file('output.svg')
-        self.scrolledwindow.add(self.img)
+        self.scrolled_window.remove(self.scrolled_window.get_child())
         self.show_all()
         time_s = time() - time_s
         print("Showing: ", time_s)
