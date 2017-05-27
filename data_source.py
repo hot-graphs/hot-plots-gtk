@@ -3,6 +3,7 @@ from time import time
 import matplotlib.pyplot as plt
 from functools import lru_cache
 import pandas as pd
+from collections import OrderedDict
 
 CSV_FILE = "Adresace_zdroju_s_GPS_vysky_parsed.csv"
 
@@ -42,6 +43,7 @@ def get_point_meta_data(id):
     except KeyError:
         raise RuntimeError("Point {0} not in the database.".format(id))
 
+
 @lru_cache(20)
 def find_points(address):
     """All points at an address
@@ -56,6 +58,8 @@ def find_points(address):
 
 def read_data(path="data/Vinohrady.json"):
     return load_json(path)
+
+# def get_temperature_data(path, id=None, axes=("hour", "temperature")):
 
 def plot_to_axis(source, ax, x="hodina", y="teplota"):
     hist = read_data(source)
