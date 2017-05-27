@@ -6,6 +6,7 @@ from gi.repository import Gtk
 from gi.repository import GObject
 from physt.io import load_json
 import os
+from data_source import *
 from time import time
 
 
@@ -21,27 +22,19 @@ class IdeaWin(Gtk.Window):
         self.grid = Gtk.Grid()
         self.add(self.grid)
 
-        self.toolbox = Gtk.Box()
-        self.grid.attach(self.toolbox, 0, 0, 7, 1)
-
         button1 = Gtk.RadioButton.new_from_widget(None)
         button1.set_label("Single sensor")
         button1.connect("toggled", self.on_button_toggled, "1")
-        self.toolbox.pack_start(button1, False, False, 0)
+        self.grid.attach(button1, 0, 0, 1, 1)
 
         button2 = Gtk.RadioButton.new_from_widget(button1)
-        button2.set_label("Filters")
+        button2.set_label("Comparison")
         button2.connect("toggled", self.on_button_toggled, "2")
-        self.toolbox.pack_start(button2, False, False, 0)
-
-        button3 = Gtk.RadioButton.new_from_widget(button1)
-        button3.set_label("Comparison")
-        button3.connect("toggled", self.on_button_toggled, "3")
-        self.toolbox.pack_start(button3, False, False, 0)
+        self.grid.attach(button2, 1, 0, 1, 1)
 
         self.map_button = Gtk.Button(label="Open Map")
         self.map_button.connect("clicked", self.on_map_button_clicked)
-        self.toolbox.pack_end(self.map_button, False, True, 0)
+        self.grid.attach(self.map_button, 3, 0, 1, 1)
 
         self.scrolledwindow_opts = Gtk.ScrolledWindow()
         self.scrolledwindow_opts.set_hexpand(True)
@@ -63,8 +56,8 @@ class IdeaWin(Gtk.Window):
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_hexpand(True)
         self.scrolledwindow.set_vexpand(True)
-        self.grid.attach(self.scrolledwindow, 1, 1, 6, 1)
-        self.path = "data/Staré Brno/vsleistr.json"
+        self.grid.attach(self.scrolledwindow, 1, 1, 5, 1)
+        self.path = "data/vsleistr.json"
         self._plot_to_file()
         self.img = Gtk.Image.new_from_file('output.svg')
         self.scrolledwindow.add(self.img)
@@ -72,16 +65,14 @@ class IdeaWin(Gtk.Window):
         filesystemTreeStore = Gtk.TreeStore(str)
         parents = {}
         self.paths = []
-
-        for (path, dirs, files) in os.walk("data"):
-            #print(path)
-            #print(dirs)
-            #print(files)
-            for subdir in dirs:
+        tree = get_point_tree()
+        for element in tree:
+            print()
+            """for subdir in dirs:
                 parents[os.path.join(path, subdir)] = filesystemTreeStore.append(parents.get(path, None), [subdir])
             for item in files:
                 filesystemTreeStore.append(parents.get(path, None), [item])
-            self.paths.append((path, dirs, files))
+            self.paths.append((path, dirs, files))"""
 
 
         self.filesystemTreeView = Gtk.TreeView(filesystemTreeStore)
@@ -109,7 +100,8 @@ class IdeaWin(Gtk.Window):
         self.show_all()
 
     def _plot_to_file(self, path="output.svg", dpi=300):
-        hist = read_data(self.path)
+        pass
+        """hist = read_data(self.path)
         projection = hist.projection(self.x, self.y)
         fig, ax = plt.subplots()
         t = time()
@@ -118,7 +110,7 @@ class IdeaWin(Gtk.Window):
         t = time()
         fig.tight_layout()
         fig.savefig(path, dpi=dpi)
-        # print("saving", time() - t)
+        # print("saving", time() - t)"""
 
     def on_map_button_clicked(self, widget):
         from map_controller import MapController
@@ -161,9 +153,6 @@ class IdeaWin(Gtk.Window):
         path = os.path.join(path, files[file_num])
         self.path = path
         self._replot()
-
-def read_data(path):
-    return load_json(path)
 
 def main():
     win = IdeaWin()
