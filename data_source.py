@@ -175,14 +175,14 @@ def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800)
     
     """
     if not ax:
-        fig, ax = plt.subplots(figsize=(10, ysize/xsize * 10))
+        fig, ax = plt.subplots(figsize=(10, height/width * 10))
     else:
         fig = ax.figure
     histogram.plot(ax=ax)
     ax.set_ylim(-20, 40)
     if path:
         fig.tight_layout()
-        fig.savefig(path, dpi=xsize/10)
+        fig.savefig(path, dpi=width/10)
         
         
 # Deprecated!

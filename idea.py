@@ -8,6 +8,7 @@ from physt.io import load_json
 import os
 from data_source import *
 from time import time
+from data_source import get_point_tree
 
 
 class IdeaWin(Gtk.Window):
@@ -57,25 +58,18 @@ class IdeaWin(Gtk.Window):
         self.scrolledwindow.set_hexpand(True)
         self.scrolledwindow.set_vexpand(True)
         self.grid.attach(self.scrolledwindow, 1, 1, 5, 1)
-        self.path = "data/vsleistr.json"
-        self._plot_to_file()
-        self.img = Gtk.Image.new_from_file('output.svg')
-        self.scrolledwindow.add(self.img)
 
-        filesystemTreeStore = Gtk.TreeStore(str)
+        self.filesystemTreeStore = Gtk.TreeStore(str, str)
         parents = {}
-        self.paths = []
-        tree = get_point_tree()
-        for element in tree:
-            print()
-            """for subdir in dirs:
-                parents[os.path.join(path, subdir)] = filesystemTreeStore.append(parents.get(path, None), [subdir])
-            for item in files:
-                filesystemTreeStore.append(parents.get(path, None), [item])
-            self.paths.append((path, dirs, files))"""
+        # self.paths = []
+
+        for part, points in get_point_tree().items():
+            parents[part] = self.filesystemTreeStore.append(None, [part, None])
+            for point in points.iterrows():
+                self.filesystemTreeStore.append(parents.get(part, None), [point[1]["Adresa"], str(point[0])])
 
 
-        self.filesystemTreeView = Gtk.TreeView(filesystemTreeStore)
+        self.filesystemTreeView = Gtk.TreeView(self.filesystemTreeStore)
         renderer = Gtk.CellRendererText()
         filesystemColumn = Gtk.TreeViewColumn("Files", renderer, text=0)
         self.filesystemTreeView.append_column(filesystemColumn)
@@ -89,28 +83,6 @@ class IdeaWin(Gtk.Window):
         self.filesystemTreeView.connect("row-activated", self.on_click)
 
         self.show_all()
-
-    def _replot(self):
-        child = self.scrolledwindow.get_child()
-        if child:
-            self.scrolledwindow.remove(child)
-        self._plot_to_file()
-        self.img = Gtk.Image.new_from_file('output.svg')
-        self.scrolledwindow.add(self.img)
-        self.show_all()
-
-    def _plot_to_file(self, path="output.svg", dpi=300):
-        pass
-        """hist = read_data(self.path)
-        projection = hist.projection(self.x, self.y)
-        fig, ax = plt.subplots()
-        t = time()
-        projection.plot("image", ax=ax)
-        # print("plotting", time() - t)
-        t = time()
-        fig.tight_layout()
-        fig.savefig(path, dpi=dpi)
-        # print("saving", time() - t)"""
 
     def on_map_button_clicked(self, widget):
         from map_controller import MapController
@@ -138,21 +110,34 @@ class IdeaWin(Gtk.Window):
             self._replot()
 
     def on_click(self, widget, coords, wobble):
-        time_s = time()
-        dir_num = coords[0]
-        file_num = coords[1]
+        gr_id = self.filesystemTreeStore.get(self.filesystemTreeStore.get_iter(coords), 1)[0]
+        # TODO: replot...
+        data = get_temperature_data(id=gr_id, axes=("hour", "temperature"))
+        plot_temperature_data(data, path="output.svg")
+        child = self.scrolledwindow.get_child()
+        if child:
+            self.scrolledwindow.remove(child)
+        self.img = Gtk.Image.new_from_file('output.svg')
+        self.scrolledwindow.add(self.img)
+        self.show_all()
+        """hist = read_data(self.path)
+        projection = hist.projection(self.x, self.y)
+        fig, ax = plt.subplots()
+        t = time()
+        projection.plot("image", ax=ax)
+        # print("plotting", time() - t)
+        t = time()
+        fig.tight_layout()
+        fig.savefig(path, dpi=dpi)
+        # print("saving", time() - t)"""
 
-        dirs = []
-        for item in os.listdir("data"):
-            if os.path.isdir(os.path.join("data", item)):
-                dirs.append(item)
-
-        path = dirs[dir_num]
-        path = os.path.join("data", path)
-        files = os.listdir(path)
-        path = os.path.join(path, files[file_num])
-        self.path = path
-        self._replot()
+        """child = self.scrolledwindow.get_child()
+        if child:
+            self.scrolledwindow.remove(child)
+        self._plot_to_file()
+        self.img = Gtk.Image.new_from_file('output.svg')
+        self.scrolledwindow.add(self.img)
+        self.show_all()"""
 
 def main():
     win = IdeaWin()
