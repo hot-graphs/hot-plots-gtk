@@ -12,14 +12,25 @@ class MapController:
         self.process = None
         self.click_callback = click_callback
 
+        self.start_lock = threading.Lock()
+        self.start_lock.acquire()
+
         thread = threading.Thread(target=self.input_thread)
         thread.daemon = True
         thread.start()
+
+        self.start_lock.acquire()
+        self.start_lock.release()
 
     def send_command(self, **kwargs):
         proc = self.ensure_process()
         json.dump(kwargs, self.process_stdin)
         self.process_stdin.flush()
+
+    def send_command_if_open(self, **kwargs):
+        with self.start_lock:
+            if self.process:
+                self.send_command(**kwargs)
 
     def ensure_process(self):
         if not self.process:
@@ -33,10 +44,11 @@ class MapController:
         return self.process
 
     def input_thread(self):
+        self.ensure_process()
+        self.start_lock.release()
         try:
             while True:
                 try:
-                    self.ensure_process()
                     line = self.process_stdout.readline()
                     if not line:
                         return
