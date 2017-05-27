@@ -27,6 +27,11 @@ class MapController:
         json.dump(kwargs, self.process_stdin)
         self.process_stdin.flush()
 
+    def send_command_if_open(self, **kwargs):
+        with self.start_lock:
+            if self.process:
+                self.send_command(**kwargs)
+
     def ensure_process(self):
         if not self.process:
             self.process = subprocess.Popen(
