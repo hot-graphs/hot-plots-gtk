@@ -116,17 +116,23 @@ def read_data(id):
     return load_json(path)
     
     
-def get_temperature_data(id=None, address=None, altitude_range=None, greenery_range=None, axes=("hour", "temperature")):
+def get_temperature_data(id=None, address=None, altitude_range=None, greenery_range=None,
+                         year=None, month=None, hour=None,
+                         axes=None):
     """Get a histogram based on various criteria.
     
     Parameters
     ----------
     id : str
+    year : int
+        In range 2013..2015
+    month : int
+    hour : int
     address : str
     altitude_range : (float, float)
     greenery_range : (float, float)
     axes : tuple(str...)
-        All axes we want to have in the final data
+        All axes we want to have in the final data as projection.
     
     Returns
     -------
@@ -141,7 +147,15 @@ def get_temperature_data(id=None, address=None, altitude_range=None, greenery_ra
         data = sum(histograms)
         
     # Do the projections / slicing
-    data = data.projection(*axes)
+    if year:
+        data = data.select("year", year - 2013)
+    if month:
+        data = data.select("month", month - 1)
+    if hour:
+        data = data.select("hour", hour)
+    
+    if axes:
+        data = data.projection(*axes)
     return data
 
 def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800):
