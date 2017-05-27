@@ -12,9 +12,15 @@ class MapController:
         self.process = None
         self.click_callback = click_callback
 
+        self.start_lock = threading.Lock()
+        self.start_lock.acquire()
+
         thread = threading.Thread(target=self.input_thread)
         thread.daemon = True
         thread.start()
+
+        self.start_lock.acquire()
+        self.start_lock.release()
 
     def send_command(self, **kwargs):
         proc = self.ensure_process()
@@ -33,6 +39,7 @@ class MapController:
         return self.process
 
     def input_thread(self):
+        self.start_lock.release()
         try:
             while True:
                 try:
