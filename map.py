@@ -60,9 +60,11 @@ class CustomMapView(MapView):
         self.active_marker = marker
         if marker:
             marker.set_active(True)
+            data = marker.row.to_dict()
+            data['location'] = marker.row.name
             send_command(
                 cmd='point_selected',
-                row={**marker.row.to_dict(), 'location': marker.row.name},
+                row=data,
             )
 
     def send_position(self, *args):
