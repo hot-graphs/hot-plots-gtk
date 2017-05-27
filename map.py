@@ -132,9 +132,11 @@ class CustomMapMarker(MapMarker):
             mapview = self.get_mapview()
             if mapview is None:
                 return
-            if self.radius_circles:
+            if self.active:
                 mapview.set_active_marker(None)
             else:
+                mapview.remove_widget(self)
+                mapview.add_marker(self)
                 mapview.set_active_marker(self)
             return True
 
