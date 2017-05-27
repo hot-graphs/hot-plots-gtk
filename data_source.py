@@ -169,6 +169,7 @@ def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800,
     ax: matplotlib.pyplot.Axes (optional)
     width: int
     height: int
+    histtype: str (optional)
     
     Returns
     -------
@@ -181,7 +182,7 @@ def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800,
         fig = ax.figure
     if histtype is None:
         histtype = ["bar", "image"][histogram.ndim - 1]
-    histogram.plot(histtype=histtype, ax=ax)
+    histogram.plot(kind=histtype, ax=ax)
     ax.set_ylim(-20, 40)
     if path:
         fig.tight_layout()
