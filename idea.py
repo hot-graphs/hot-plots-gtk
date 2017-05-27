@@ -1,8 +1,9 @@
-#encoding: utf-8
+#! /usr/bin/env python3
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_gtk3cairo import FigureCanvasGTK3Cairo as FigureCanvas
 from gi.repository import Gtk
+from gi.repository import GObject
 from physt.io import load_json
 import os
 from time import time
@@ -10,6 +11,7 @@ from time import time
 
 class IdeaWin(Gtk.Window):
     def __init__(self):
+        GObject.threads_init()
         super().__init__(title="Hot Plots")
         self.x = "hour"
         self.y = "temperature"
@@ -116,9 +118,13 @@ class IdeaWin(Gtk.Window):
         fig.tight_layout()
         fig.savefig(path, dpi=dpi)
         # print("saving", time() - t)
-        
+
     def on_map_button_clicked(self, widget):
-        pass
+        from map_controller import MapController
+        map_controller = MapController(
+            click_callback=lambda data: print('gtk got:', data),
+        )
+        map_controller.send_command(cmd='start')
 
     def on_interval_combo_changed(self, combo):
         tree_iter = combo.get_active_iter()
