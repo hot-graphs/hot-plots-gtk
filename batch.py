@@ -18,7 +18,11 @@ def batch(x, y, id, output_path, month, hour):
         hour = None
     if month < 0:
         month = None
-    data = get_temperature_data(id=id, hour=hour, month=month, axes=(x, y))
+    try:
+        data = get_temperature_data(id=id, hour=hour, month=month, axes=(x, y))
+    except:
+        print("Cannot read data.")
+        exit(-1)
     plot_temperature_data(data, output_path)
     print("Output written to {0}.".format(output_path))
     
