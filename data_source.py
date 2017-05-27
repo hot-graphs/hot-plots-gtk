@@ -116,25 +116,83 @@ def read_data(id):
     return load_json(path)
     
     
-def get_temperature_data(id=None, altitude_range=None, greenery_range=None, axes=("hour", "temperature")):
+def get_temperature_data(id=None, address=None, altitude_range=None, greenery_range=None,
+                         year=None, month=None, hour=None,
+                         axes=None):
+    """Get a histogram based on various criteria.
+    
+    Parameters
+    ----------
+    id : str
+    year : int
+        In range 2013..2015
+    month : int
+    hour : int
+    address : str
+    altitude_range : (float, float)
+    greenery_range : (float, float)
+    axes : tuple(str...)
+        All axes we want to have in the final data as projection.
+    
+    Returns
+    -------
+    h : physt.histogram_base.HistogramBase
+    """
     # Select data
     if id:
         data = read_data(id)
     else:
-        points = find_points(altitude_range=altitude_range, greenery_range=greenery_range)
+        points = find_points(address=address, altitude_range=altitude_range, greenery_range=greenery_range)
         histograms = [read_data(id_) for id_ in points.index]
         data = sum(histograms)
         
-    data = data.projection(*axes)
+    # Do the projections / slicing
+    if year:
+        data = data.select("year", year - 2013)
+    if month:
+        data = data.select("month", month - 1)
+    if hour:
+        data = data.select("hour", hour)
+    
+    if axes:
+        data = data.projection(*axes)
     return data
-        
 
+def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800):
+    """Plot histogram data.
+    
+    Parameters
+    ----------
+    histogram: physt.histogram_base.HistogramBase
+    path: str (optional)
+    ax: matplotlib.pyplot.Axes (optional)
+    width: int
+    height: int
+    
+    Returns
+    -------
+    None
+    
+    """
+    if not ax:
+        fig, ax = plt.subplots(figsize=(10, ysize/xsize * 10))
+    else:
+        fig = ax.figure
+    histogram.plot(ax=ax)
+    ax.set_ylim(-20, 40)
+    if path:
+        fig.tight_layout()
+        fig.savefig(path, dpi=xsize/10)
+        
+        
+# Deprecated!
 def plot_to_axis(source, ax, x="hodina", y="teplota"):
     hist = read_data(source)
     projection = hist.projection(x, y)
     projection.plot(ax = ax)
+
     
-    
+# Deprecated!
 def plot_to_file(source, path="output.png", x="hodina", y="teplota", xsize=1024, ysize=800):
     hist = read_data(source)
     projection = hist.projection(x, y)

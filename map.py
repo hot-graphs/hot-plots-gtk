@@ -22,6 +22,22 @@ import click
 X_STRETCH = 1.531
 
 
+def arc_params(row, column_name, rpos, mapview):
+    value = row[column_name]
+    print(column_name)
+    if column_name == 'avgtemp':
+        minimum = mapview.min_avg_temp
+        maximum = mapview.max_avg_temp
+        normalized_avgtemp = (value - minimum) / (maximum - minimum)
+        n2 = normalized_avgtemp * 2
+        if normalized_avgtemp < 1/2:
+            return {'rgba': (n2, 0, 1, 1)}
+        else:
+            return {'rgba': (1, 0, 1-n2, 1)}
+    else:
+        return {'rgba': (0, rpos, 0, 1), 'end': 360*value}
+
+
 class CustomMapView(MapView):
     def __init__(self, *args, **kwargs):
         self.active_marker = None
@@ -46,8 +62,7 @@ class CustomMapView(MapView):
             marker.set_active(True)
             send_command(
                 cmd='point_selected',
-                row=marker.row.to_dict(),
-                location=marker.row.name,
+                row={**marker.row.to_dict(), 'location': marker.row.name},
             )
 
     def send_position(self, *args):
@@ -60,9 +75,10 @@ class CustomMapView(MapView):
 
 
 class CustomMapMarker(MapMarker):
-    def __init__(self, *args, row, radiuses, **kwargs):
+    def __init__(self, *args, row, radiuses, columns, mapview, **kwargs):
         self.row = row
         self.radiuses = radiuses
+        self.columns = columns
         self.lat, self.lon = row.name
         super().__init__(*args, **kwargs)
         self.anchor_x = 0
@@ -81,16 +97,18 @@ class CustomMapMarker(MapMarker):
             hsz = -sz/2
             graphics.Ellipse(size=(sz, sz), pos=(hsz, hsz))
 
-            for pos, r in enumerate(reversed(radiuses)):
+            n = len(columns)
+            for pos, r in enumerate(reversed(columns)):
                 value = self.row[str(r)]
-                rpos = (len(row) - pos) / len(row)
-                sz = self.size[0] / len(row) * (len(row) - pos)
+                rpos = (n - pos) / n
+                params = arc_params(row, r, rpos, mapview)
+                sz = self.size[0] / n * (n - pos)
                 hsz = -sz/2
                 graphics.Color(1-rpos/20, 1-rpos/20, 1, 1)
                 graphics.Ellipse(size=(sz, sz), pos=(hsz, hsz))
                 if value:
-                    graphics.Color(0, rpos, 0, 1)
-                    graphics.Ellipse(size=(sz, sz), pos=(hsz, hsz), angle_end=360*value)
+                    graphics.Color(*params['rgba'])
+                    graphics.Ellipse(size=(sz, sz), pos=(hsz, hsz), angle_end=params.get('end', 360))
             graphics.PopMatrix()
         self.bind(pos=self.reposition)
         self.set_active(False)
@@ -155,10 +173,14 @@ def send_command(**kwargs):
 
 
 class MapViewApp(App):
-    def __init__(self, points, radiuses, *args, **kwargs):
+    def __init__(self, points, radiuses, columns, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.points = points
         self.radiuses = radiuses
+        self.columns = columns
+
+        self.min_avg_temp = points['avgtemp'].min()
+        self.max_avg_temp = points['avgtemp'].max()
 
         input_thread = threading.Thread(target=self.do_input)
         input_thread.daemon = True
@@ -185,7 +207,7 @@ class MapViewApp(App):
                 send_command(cmd='loaded')
                 return
             #mark = CustomMapMarker(lon=row['GPS lon'], lat=row['GPS lat'], source='noun_9209_cc_red.png')
-            mark = CustomMapMarker(row=row, radiuses=self.radiuses)
+            mark = CustomMapMarker(row=row, radiuses=self.radiuses, columns=self.columns, mapview=self)
             self.mapview.add_marker(mark)
         Clock.schedule_once(self.add_next_points, 0)
         print('{}/{}'.format(i, len(self.points)), file=sys.stderr)
@@ -193,6 +215,7 @@ class MapViewApp(App):
     def do_input(self):
         for line in sys.stdin:
             try:
+                print('map: got ', line, file=sys.stderr)
                 data = json.loads(line)
                 cmd = data['cmd']
                 self.handle_command(cmd, data)
@@ -202,8 +225,7 @@ class MapViewApp(App):
     def handle_command(self, cmd, data):
         if cmd == 'stop':
             self.stop()
-        if cmd == 'pos':
-            # {"cmd": "center", "lat": 0, "long": 0, "zoom": 1}
+        elif cmd == 'pos':
             if 'zoom' in data:
                 self.mapview.zoom = int(data['zoom'])
             self.mapview.center_on(float(data['lat']), float(data['lon']))
@@ -214,9 +236,11 @@ class MapViewApp(App):
 @click.command()
 def main():
     radiuses = 0.001, 0.005, 0.01
-    adresace = pandas.read_csv('teplarny-adresace.csv').set_index(['GPS lat', 'GPS lon'])
-    points = adresace.loc[:, [str(r) for r in radiuses] + ['Adresa']].drop_duplicates()
-    MapViewApp(points, radiuses).run()
+    adresace = pandas.read_csv('teplarny-adresace-teplota.csv', sep=';').set_index(['GPS lat', 'GPS lon'])
+    radiuses = [str(r) for r in radiuses]
+    columns = radiuses + ['avgtemp']
+    points = adresace.loc[:, columns + ['Adresa']].drop_duplicates()
+    MapViewApp(points, radiuses, columns).run()
 
 if __name__ == '__main__':
     main()

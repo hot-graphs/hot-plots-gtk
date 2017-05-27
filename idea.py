@@ -15,7 +15,8 @@ class IdeaWin(Gtk.Window):
         super().__init__(title="Hot Plots")
         self.x = "hour"
         self.y = "temperature"
-        self.connect("delete-event", Gtk.main_quit)
+        self.map_controller = None
+        self.connect("delete-event", self.clean_up)
         self.set_default_size(1280, 720)
         self.grid = Gtk.Grid()
         self.add(self.grid)
@@ -121,10 +122,16 @@ class IdeaWin(Gtk.Window):
 
     def on_map_button_clicked(self, widget):
         from map_controller import MapController
-        map_controller = MapController(
+        self.map_controller = MapController(
             click_callback=lambda data: print('gtk got:', data),
         )
-        map_controller.send_command(cmd='start')
+        self.map_controller.send_command(cmd='start')
+
+    def clean_up(self, *args):
+        if self.map_controller:
+            self.map_controller.send_command_if_open(cmd='stop')
+
+        Gtk.main_quit()
 
     def on_button_toggled(self, widget, name):
         pass
