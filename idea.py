@@ -33,11 +33,8 @@ class IdeaWin(Gtk.Window):
 
         self.listbox.add(self.x_control_row)
 
-        self.map_button = Gtk.Button(label="Open Map")
-        self.map_button.connect("clicked", self.on_map_button_clicked)
-        self.map_row = Gtk.ListBoxRow()
-        self.map_row.add(self.map_button)
-        self.listbox.add(self.map_row)
+        self.x_control_label = Gtk.Label("X axis:")
+        self.x_control_hbox.pack_start(self.x_control_label, True, True, 0)
 
         interval_store = Gtk.ListStore(str)
         intervals = ["hour", "month"]
@@ -53,6 +50,12 @@ class IdeaWin(Gtk.Window):
         self.interval_combo.add_attribute(self.renderer_text, "text", 0)
 
         self.x_control_hbox.pack_end(self.interval_combo, True, True, 5)
+
+        self.map_button = Gtk.Button(label="Open Map")
+        self.map_button.connect("clicked", self.on_map_button_clicked)
+        self.map_row = Gtk.ListBoxRow()
+        self.map_row.add(self.map_button)
+        self.listbox.add(self.map_row)
 
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_hexpand(True)
