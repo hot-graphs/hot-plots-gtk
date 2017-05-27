@@ -8,7 +8,11 @@ from czech_sort import sorted as czech_sorted
 import os
 
 
-CSV_FILE = "Adresace_zdroju_s_GPS_vysky_parsed.csv"
+CSV_FILE = "Adresace_zdroju_s_GPS_vysky_lesy_parsed.csv"
+
+
+def calculate_greenery(df, a=0.5, b=1/3., c=1/6.):
+    return a * df["0.001"] + b * df["0.005"] + c * df["0.01"]
 
 
 @lru_cache(1)
@@ -22,6 +26,7 @@ def get_all_point_metadata(path=CSV_FILE):
     data = pd.read_csv(path, sep=";")
     data["id"] = data["Systém"].str.lower()
     data.set_index("id", inplace=True)
+    data["greenery"] = calculate_greenery(data)
     return data
     
 
@@ -80,7 +85,7 @@ def get_point_tree():
     
     
 @lru_cache(20)
-def find_points(address=None, altitude_range=None):
+def find_points(address=None, altitude_range=None, greenery_range=None):
     """All points at an address.
     
     Returns
@@ -93,6 +98,8 @@ def find_points(address=None, altitude_range=None):
         data = data[data["Adresa"] == address]
     if altitude_range:
         data = data[(data["vyska"] >= altitude_range[0]) & (data["vyska"] <= altitude_range[1])]
+    if greenery_range:
+        data = data[(data["greenery"] >= greenery_range[0]) & (data["greenery"] <= greenery_range[1])]
     available = get_available_points()
     data = data.loc[set(available) & set(data.index)]
     return data
@@ -109,12 +116,12 @@ def read_data(id):
     return load_json(path)
     
     
-def get_temperature_data(id=None, altitude_range=None, axes=("hour", "temperature")):
+def get_temperature_data(id=None, altitude_range=None, greenery_range=None, axes=("hour", "temperature")):
     # Select data
     if id:
         data = read_data(id)
     else:
-        points = find_points(altitude_range=altitude_range)
+        points = find_points(altitude_range=altitude_range, greenery_range=greenery_range)
         histograms = [read_data(id_) for id_ in points.index]
         data = sum(histograms)
         
