@@ -137,9 +137,11 @@ class IdeaWin(Gtk.Window):
         self.green_max_scale.connect("value-changed", self.scale_moved)
 
         slider_box.pack_start(self.green_min_scale, True, True, 0)
+
         self.last_slider_move_index = 0
         self.graph_id = 0
         self.run_id = random.randrange(9999, 10000)
+        self.worker_process = None
 
         slider_box = Gtk.Box()
         inner_vbox.pack_start(slider_box, False, False, 15)
@@ -222,8 +224,6 @@ class IdeaWin(Gtk.Window):
 
         self.show_all()
 
-        self.worker_process = None
-
     def _plot(self, *args):
         if self.filters_button.get_active():
             greenery_range = (
@@ -267,18 +267,24 @@ class IdeaWin(Gtk.Window):
         outfile = 'output-{}-{}.svg'.format(self.run_id, self.graph_id)
         args.extend([outfile])
 
+        if self.worker_process:
+            self.worker_process.kill()
+
+        print('exec', args)
+        self.worker_process = worker_process = subprocess.Popen(args)
+
         def _target():
             try:
-                print('exec', args)
-                worker_process = subprocess.Popen(args)
                 worker_process.communicate()
                 print('done', worker_process.returncode, outfile)
                 if worker_process.returncode == 0:
                     GLib.idle_add(self.show_image, outfile)
                 else:
-                    os.unlink(outfile)
+                    if os.path.exists(outfile):
+                        os.unlink(outfile)
             except Exception:
-                os.unlink(outfile)
+                if os.path.exists(outfile):
+                    os.unlink(outfile)
                 raise
 
         threading.Thread(target=_target).start()
@@ -291,7 +297,8 @@ class IdeaWin(Gtk.Window):
         self.img = Gtk.Image.new_from_file(filename)
         self.scrolledwindow.add(self.img)
         self.show_all()
-        os.unlink(filename)
+        if os.path.exists(filename):
+            os.unlink(filename)
 
     def on_map_button_clicked(self, widget):
         from map_controller import MapController
