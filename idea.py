@@ -4,6 +4,7 @@ from matplotlib.figure import Figure
 # from matplotlib.backends.backend_gtk3cairo import FigureCanvasGTK3Cairo as FigureCanvas
 from gi.repository import Gtk
 from gi.repository import GObject
+from gi.repository import GLib
 from physt.io import load_json
 import os
 from data_source import *
@@ -135,10 +136,13 @@ class IdeaWin(Gtk.Window):
         self.green_max_scale.set_valign(Gtk.Align.START)
         self.green_max_scale.set_digits(0)
         self.green_max_scale.set_hexpand(True)
+        self.green_max_scale.set_value(100)
         self.green_max_scale.connect("value-changed", self.scale_moved)
 
         slider_box.pack_start(self.green_min_scale, True, True, 0)
-        
+
+        self.last_slider_move_index = 0
+
         slider_box = Gtk.Box()
         inner_vbox.pack_start(slider_box, False, False, 15)
 
@@ -214,9 +218,19 @@ class IdeaWin(Gtk.Window):
         self.show_data(data)
 
     def scale_moved(self, widget):
-        greenery_range = (self.green_min_scale.get_value()/100, 1.0)
-        print(greenery_range)
+        self.last_slider_move_index += 1
+        GLib.timeout_add(500, self.apply_scale_moves, self.last_slider_move_index)
+
+    def apply_scale_moves(self, index):
+        if self.last_slider_move_index == index:
+            self.apply_filters()
+
+    def apply_filters(self):
+        greenery_range = (self.green_min_scale.get_value()/100, self.green_max_scale.get_value()/100)
+        ranges = greenery_range
+        print('apply', greenery_range)
         data = get_temperature_data(greenery_range=greenery_range, axes=(self.x, self.y))
+        print('applied')
         self.show_data(data)
 
     def show_data(self, data):
@@ -237,9 +251,6 @@ class IdeaWin(Gtk.Window):
         self.map_controller.send_command(cmd='start')
 
     def on_button_toggled(self):
-        pass
-
-    def apply_filters(self, widget):
         pass
 
     def clean_up(self, *args):
