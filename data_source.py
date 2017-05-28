@@ -197,7 +197,7 @@ def get_temperature_data(id=None, address=None, altitude_range=None, greenery_ra
     return data
 
 
-def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800, histtype=None):
+def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=768, histtype=None):
     """Plot histogram data.
     
     Parameters
@@ -214,9 +214,6 @@ def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800,
     None
         
     """
-    # matplotlib.rc('font', family='se Sans') 
-    # matplotlib.rc('font', serif='Ubuntu') 
-    
     if not ax:
         fig, ax = plt.subplots(figsize=(10, height/width * 10))
     else:
@@ -255,24 +252,3 @@ def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800,
         fig.tight_layout()
         fig.savefig(path, dpi=width/10)
     plt.close(fig)
-        
-        
-# Deprecated!ax.set_xticks([2013, 2014, 2015])
-def plot_to_axis(source, ax, x="hodina", y="teplota"):
-    hist = read_data(source)
-    projection = hist.projection(x, y)
-    projection.plot(ax = ax)
-
-    
-# Deprecated!
-def plot_to_file(source, path="output.png", x="hodina", y="teplota", xsize=1024, ysize=800):
-    hist = read_data(source)
-    projection = hist.projection(x, y)
-    fig, ax = plt.subplots(figsize=(10, ysize/xsize * 10))
-    t = time()
-    projection.plot("image", ax=ax)
-    # print("plotting", time() - t)
-    t = time()
-    fig.tight_layout()
-    fig.savefig(path, dpi=xsize/10)
-    # print("saving", time() - t)
