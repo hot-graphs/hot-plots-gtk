@@ -95,6 +95,7 @@ class IdeaWin(Gtk.Window):
         button1.set_label("Address")
         button1.connect("toggled", self.on_selector_button_toggled, "1")
         hbox.pack_start(button1, False, False, 0)
+        button1.connect('toggled', self._plot)
 
         self.filters_button = button2 = Gtk.RadioButton.new_from_widget(button1)
         button2.set_label("Filters")
@@ -213,12 +214,6 @@ class IdeaWin(Gtk.Window):
         self.interval_combo.add_attribute(self.renderer_text, "text", 0)
         hbox.pack_start(self.interval_combo, False, False, 0)
 
-        button_box = Gtk.Box()
-        inner_vbox.pack_start(button_box, False, False, 15)
-        button = Gtk.Button(label="Apply Filters")
-        button_box.pack_end(button, False, False, 5)
-        button.connect("clicked", self._plot)
-
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
         self.graph_box.pack_start(self.scrolledwindow, True, True, 0)
@@ -252,7 +247,7 @@ class IdeaWin(Gtk.Window):
 
     def scale_moved(self, widget):
         self.last_slider_move_index += 1
-        #GLib.timeout_add(500, self.apply_scale_moves, self.last_slider_move_index)
+        GLib.timeout_add(500, self.apply_scale_moves, self.last_slider_move_index)
 
     def apply_scale_moves(self, index):
         if self.last_slider_move_index == index:
