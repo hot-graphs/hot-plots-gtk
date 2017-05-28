@@ -166,17 +166,16 @@ class ShadeMapMarker(MapMarker):
 class Tooltip(Widget):
     def __init__(self, marker, **kwargs):
         super().__init__(**kwargs)
-        pos = 8, 15
         with self.canvas.before:
             graphics.PushMatrix()
             self.translation = graphics.Translate(0, 0)
             graphics.StencilPush()
-            self.stencil_rect = graphics.Rectangle(pos=pos, size=(200, 5))
+            self.stencil_rect = graphics.Rectangle(size=(200, 5))
             graphics.StencilUse()
             graphics.Color(1, 1, 1/2, 0.8)
-            self.bg_rect = graphics.Rectangle(pos=pos, size=(100, 100))
+            self.bg_rect = graphics.Rectangle(size=(100, 100))
             graphics.Color(*marker.outer_ring_color)
-            graphics.Ellipse(pos=(8+8, 15+8), size=(10, 10))
+            graphics.Ellipse(pos=(8, 8), size=(10, 10))
             graphics.PopMatrix()
             graphics.Color(0, 0, 0, 1)
 
@@ -223,11 +222,14 @@ class Tooltip(Widget):
         self.reposition()
 
     def reposition(self, *args):
+        lw, lh = self.label.texture_size
         parent = self.parent
         if parent:
-            self.translation.xy = parent.pos
-            self.label.pos = parent.x + 13, parent.y + 18 + self.label2.texture_size[1]
-            self.label2.pos = parent.x + 33, parent.y + 18
+            x = parent.x + 8
+            y = parent.y + 15
+            self.translation.xy = x, y
+            self.label.pos = x + 5, y + 3 + self.label2.texture_size[1]
+            self.label2.pos = x + 5 + lh, y + 3
 
     def collide_point(self, x, y):
         return False
