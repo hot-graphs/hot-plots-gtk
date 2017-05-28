@@ -84,34 +84,10 @@ class IdeaWin(Gtk.Window):
         row = Gtk.ListBoxRow()
         self.listbox.add(row)
         vbox = Gtk.VBox()
-        row.add(vbox)
-        hbox = Gtk.Box()
-        vbox.pack_start(hbox, False, False, 0)
-        label = Gtk.Label("X axis: ")
-        hbox.pack_start(label, False, False, 0)
-
-        interval_store = Gtk.ListStore(str)
-        intervals = ["hour", "month"]
-        for interval in intervals:
-            interval_store.append([interval])
-
-        self.interval_combo = Gtk.ComboBox.new_with_model(interval_store)
-        self.interval_combo.set_active(0)
-
-        self.interval_combo.connect("changed", self.on_interval_combo_changed)
-        self.renderer_text = Gtk.CellRendererText()
-        self.interval_combo.pack_start(self.renderer_text, False)
-        self.interval_combo.add_attribute(self.renderer_text, "text", 0)
-        hbox.pack_start(self.interval_combo, False, False, 0)
-
-
-        row = Gtk.ListBoxRow()
-        self.listbox.add(row)
-        vbox = Gtk.VBox()
         hbox = Gtk.Box()
         row.add(vbox)
         vbox.pack_start(hbox, False, False, 0)
-        check = Gtk.CheckButton("Greenary Filter")
+        check = Gtk.CheckButton("Greenery Filter")
         hbox.pack_start(check, False, False, 0)
         inner_vbox = Gtk.VBox()
         vbox.pack_start(inner_vbox, False, False, 0)
@@ -136,7 +112,7 @@ class IdeaWin(Gtk.Window):
         self.green_max_scale.connect("value-changed", self.scale_moved)
 
         slider_box.pack_start(self.green_min_scale, True, True, 0)
-        
+
         slider_box = Gtk.Box()
         inner_vbox.pack_start(slider_box, False, False, 15)
 
@@ -150,12 +126,6 @@ class IdeaWin(Gtk.Window):
         vbox.pack_start(hbox, False, False, 0)
         check = Gtk.CheckButton("Altitude Filter")
         hbox.pack_start(check, False, False, 0)
-
-        button_box = Gtk.Box()
-        inner_vbox.pack_start(button_box, False, False, 15)
-        button = Gtk.Button(label="Apply Changes")
-        button_box.pack_end(button, False, False, 5)
-        button.connect("clicked", self.apply_filters)
 
         inner_vbox = Gtk.VBox()
         vbox.pack_start(inner_vbox, False, False, 0)
@@ -185,12 +155,29 @@ class IdeaWin(Gtk.Window):
         inner_vbox.pack_start(slider_box, False, False, 15)
 
         slider_box.pack_start(self.alt_max_scale, True, True, 0)
+        
+        row = Gtk.ListBoxRow()
+        self.listbox.add(row)
+        vbox = Gtk.VBox()
+        row.add(vbox)
+        hbox = Gtk.Box()
+        vbox.pack_start(hbox, False, False, 0)
+        label = Gtk.Label("X axis: ")
+        hbox.pack_start(label, False, False, 0)
 
-        button_box = Gtk.Box()
-        inner_vbox.pack_start(button_box, False, False, 15)
-        button = Gtk.Button(label="Apply Changes")
-        button_box.pack_end(button, False, False, 5)
-        button.connect("clicked", self.apply_filters)
+        interval_store = Gtk.ListStore(str)
+        intervals = ["hour", "month"]
+        for interval in intervals:
+            interval_store.append([interval])
+
+        self.interval_combo = Gtk.ComboBox.new_with_model(interval_store)
+        self.interval_combo.set_active(0)
+
+        self.interval_combo.connect("changed", self.on_interval_combo_changed)
+        self.renderer_text = Gtk.CellRendererText()
+        self.interval_combo.pack_start(self.renderer_text, False)
+        self.interval_combo.add_attribute(self.renderer_text, "text", 0)
+        hbox.pack_start(self.interval_combo, False, False, 0)
 
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
