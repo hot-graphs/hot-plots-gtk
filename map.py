@@ -364,6 +364,7 @@ class MapViewApp(App):
         self.mapview = CustomMapView(**BRNO, radiuses=self.radiuses)
         self.points_iter = iter(enumerate(self.points.iterrows()))
         self.add_next_points()
+        self.title = 'Temperature Map'
         return self.mapview
 
     def add_next_points(self, *args):

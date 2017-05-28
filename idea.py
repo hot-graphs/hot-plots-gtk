@@ -25,6 +25,7 @@ class IdeaWin(Gtk.Window):
         self.outerbox.set_vexpand(True)
         self.toolbox = Gtk.Box()
         self.outerbox.pack_start(self.toolbox, False, False, 0)
+        self.set_icon_from_file("logo.png")
 
         button1 = Gtk.RadioButton.new_from_widget(None)
         button1.set_label("Single sensor")
