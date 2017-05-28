@@ -1,3 +1,5 @@
+"""Data loading and plotting functions."""
+
 from physt.io import load_json
 from time import time
 import matplotlib.pyplot as plt
@@ -6,12 +8,29 @@ import pandas as pd
 from collections import OrderedDict
 from czech_sort import sorted as czech_sorted
 import os
+from matplotlib.ticker import MultipleLocator
+import matplotlib
+import matplotlib.font_manager as fm
 
 
 CSV_FILE = "Adresace_zdroju_s_GPS_vysky_lesy_parsed.csv"
+MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
 def calculate_greenery(df, a=0.5, b=1/3., c=1/6.):
+    """Calculate one numerical "greenery" parameter from three columns.
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Containing columns "0.001", "0.005", and "0.01"
+    a, b, c : float
+        Weight parameters for different radii
+    
+    Returns
+    -------
+    series : pd.Series
+    """
     return a * df["0.001"] + b * df["0.005"] + c * df["0.01"]
 
 
@@ -31,15 +50,15 @@ def get_all_point_metadata(path=CSV_FILE):
     
 
 @lru_cache(1)
-def get_available_points():
-    """All available point ids (with temperature data).
+def get_available_points(only_with_data=True):
+    """All available point ids.
     
     Returns
     -------
     ids : list
     """
     data = get_all_point_metadata(path=CSV_FILE)
-    return sorted([i for i in data.index if has_data(i)])
+    return sorted([i for i in data.index if has_data(i) or not only_with_data])
     
     
 def has_data(id):
@@ -140,22 +159,38 @@ def get_temperature_data(id=None, address=None, altitude_range=None, greenery_ra
     """
     # Select data
     if id:
+        point = get_point_meta_data(id)
+        left_text = point["Adresa"] + " (" + id + ")"
         data = read_data(id)
     else:
+        left_texts = []
         points = find_points(address=address, altitude_range=altitude_range, greenery_range=greenery_range)
+        if address:
+            left_texts.append(address)
+        if altitude_range:
+            left_texts.append("{0}-{1} m".format(*altitude_range))
+        if greenery_range:
+            left_texts.append("{0}-{1} % green".format(*(int(g * 100) for g in greenery_range)))
         histograms = [read_data(id_) for id_ in points.index]
         data = sum(histograms)
+        left_text = ", ".join(left_texts)
         
     # Do the projections / slicing
+    right_texts = []
     if year:
         data = data.select("year", year - 2013)
+        right_texts.append(str(year))
     if month:
         data = data.select("month", month - 1)
+        right_texts.append(MONTH_NAMES[month-1])
     if hour:
         data = data.select("hour", hour)
+        right_texts.append("{0}:00-{1}:00".format(hour, hour+1))
+    right_text = ", ".join(right_texts)
     
     if axes:
         data = data.projection(*axes)
+    data.title = " - ".join([t for t in [left_text, right_text] if t])
     return data
 
 
@@ -174,22 +209,45 @@ def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800,
     Returns
     -------
     None
-    
+        
     """
+    # matplotlib.rc('font', family='se Sans') 
+    # matplotlib.rc('font', serif='Ubuntu') 
+    
     if not ax:
         fig, ax = plt.subplots(figsize=(10, height/width * 10))
     else:
         fig = ax.figure
     if histtype is None:
         histtype = ["bar", "image"][histogram.ndim - 1]
-    histogram.plot(kind=histtype, ax=ax)
+    histogram.plot(kind=histtype, ax=ax, show_colorbar=False, cmap="Purples")
+    if histogram.axis_names[0] == "month":
+        ax.set_xticks(range(1,13))
+        ax.set_xticklabels(MONTH_NAMES)
+    if histogram.axis_names[0] == "hour":
+        hours = list(range(3, 23, 3))
+        ax.set_xticks(hours)
+        ax.set_xticklabels([str(h) + ":00" for h in hours])
+        minor_locator = MultipleLocator(1)
+        ax.xaxis.set_minor_locator(minor_locator)
+    if histogram.axis_names[0] == "year":
+        ax.set_xticks([2013, 2014, 2015])
+        ax.set_xticklabels([2013, 2014, 2015])
+    if histogram.axis_names[0] == "temperature":
+        minor_locator = MultipleLocator(2)
+        ax.yaxis.set_minor_locator(minor_locator)
+        ax.set_xlabel("Temperature [°C]")
+    if histogram.axis_names[1] == "temperature":
+        minor_locator = MultipleLocator(2)
+        ax.yaxis.set_minor_locator(minor_locator)
+        ax.set_ylabel("Temperature [°C]")
     ax.set_ylim(-20, 40)
     if path:
         fig.tight_layout()
         fig.savefig(path, dpi=width/10)
         
         
-# Deprecated!
+# Deprecated!ax.set_xticks([2013, 2014, 2015])
 def plot_to_axis(source, ax, x="hodina", y="teplota"):
     hist = read_data(source)
     projection = hist.projection(x, y)
