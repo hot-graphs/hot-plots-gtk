@@ -24,6 +24,7 @@ class IdeaWin(Gtk.Window):
         super().__init__(title="Hot Plots")
         self.x = "hour"
         self.y = "temperature"
+        self.spinner = Gtk.Spinner()
         self.map_controller = None
         self.connect("delete-event", self.clean_up)
         self.outerbox = Gtk.VBox()
@@ -52,6 +53,8 @@ class IdeaWin(Gtk.Window):
         self.outerbox.pack_end(self.mainbox, True, True, 0)
 
         self.comparewindow = Gtk.ScrolledWindow()
+        self.comparewindow.set_halign(Gtk.Align.START)
+        self.comparewindow.set_hexpand(False)
         self.comparewindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
         self.mainbox.pack_start(self.comparewindow, True, True, 0)
 
@@ -252,7 +255,8 @@ class IdeaWin(Gtk.Window):
         child = self.scrolledwindow.get_child()
         if child:
             self.scrolledwindow.remove(child)
-        self.scrolledwindow.add(Gtk.Spinner())
+        self.scrolledwindow.add(self.spinner)
+        self.spinner.start()
 
         def _target():
             try:
