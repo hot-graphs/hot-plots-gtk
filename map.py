@@ -14,6 +14,8 @@ from kivy import graphics
 from kivy.properties import NumericProperty, ObjectProperty, ListProperty, \
     AliasProperty, BooleanProperty, StringProperty
 from kivy.core.window import Window
+from kivy.animation import Animation
+from kivy.uix.label import Label
 import pandas
 import click
 
@@ -25,7 +27,6 @@ X_STRETCH = 1.531
 
 def arc_params(row, column_name, rpos, mapview):
     value = row[column_name]
-    print(column_name)
     if column_name == 'avgtemp':
         minimum = mapview.min_avg_temp
         maximum = mapview.max_avg_temp
@@ -59,10 +60,34 @@ class CustomMapView(MapView):
         self.marker_layer = MarkerMapLayer()
         self.add_layer(self.marker_layer)
 
-        #Window.bind(mouse_pos=self.update_mouse_pos)
+        self.tooltip_widget = None
+
+        Window.bind(mouse_pos=self.update_mouse_pos)
 
     def update_mouse_pos(self, window, mouse_pos):
-        print('mouse:', mouse_pos)
+        if not self.get_root_window():
+            return
+        under_mouse = self.lookup_marker(*mouse_pos)
+        if self.tooltip_widget:
+            if self.tooltip_widget == under_mouse:
+                return
+            self.tooltip_widget.close_tooltip()
+        Clock.unschedule(self.display_tooltip) # cancel scheduled event since I moved the cursor
+        self.tooltip_widget = under_mouse
+        if self.tooltip_widget:
+            Clock.schedule_once(self.display_tooltip, 0.05)
+
+    def display_tooltip(self, *args):
+        if self.tooltip_widget:
+            self.remove_marker(self.tooltip_widget)
+            self.add_marker(self.tooltip_widget, layer=self.marker_layer)
+            self.tooltip_widget.show_tooltip()
+
+    def lookup_marker(self, x, y):
+        r2 = 20 ** 2
+        for marker in self.marker_layer.children:
+            if (x - marker.x) ** 2 + (y - marker.y) ** 2 < r2:
+                return marker
 
     def set_active_marker(self, marker):
         if self.active_marker:
@@ -121,7 +146,6 @@ class ShadeMapMarker(MapMarker):
             self.shade_color.rgba = 1, 1, 1, 0.3
             mapview = self.get_mapview()
             if mapview is None:
-                print('NO MAPVIEW!')
                 Clock.schedule_once(self.reposition, 0)
                 return
             for i, (r, circle) in enumerate(zip(self.radiuses, self.radius_circles)):
@@ -139,6 +163,57 @@ class ShadeMapMarker(MapMarker):
         return False
 
 
+class Tooltip(Widget):
+    def __init__(self, marker, **kwargs):
+        super().__init__(**kwargs)
+        pos = 8, 15
+        with self.canvas.before:
+            graphics.PushMatrix()
+            self.translation = graphics.Translate(0, 0)
+            graphics.StencilPush()
+            self.stencil_rect = graphics.Rectangle(pos=pos, size=(200, 5))
+            graphics.StencilUse()
+            graphics.Color(1, 1, 1/2, 0.8)
+            self.bg_rect = graphics.Rectangle(pos=pos, size=(100, 80))
+            graphics.PopMatrix()
+            graphics.Color(0, 0, 0, 1)
+
+        self.label = Label(text=marker.row['Adresa'], pos=(5, 5), color=(0, 0, 0, 1))
+        self.add_widget(self.label)
+        self.label.bind(texture_size=self.resize_text)
+
+        with self.canvas.after:
+            graphics.StencilUnUse()
+            graphics.StencilPop()
+            pass
+
+    def open(self):
+        sz = self.stencil_rect.size[0]
+        Animation(size=(sz, 40), duration=0.1).start(self.stencil_rect)
+
+    def close(self):
+        sz = self.stencil_rect.size[0]
+        anim = Animation(size=(sz, 0), duration=0.1)
+        anim.start(self.stencil_rect)
+
+    def resize_text(self, *args):
+        self.label.width = self.label.texture_size[0]
+        self.label.height = 20
+        self.bg_rect.size = (
+            self.label.texture_size[0] + 10,
+            self.label.texture_size[1] + 10,
+        )
+
+    def reposition(self, *args):
+        parent = self.parent
+        if parent:
+            self.translation.xy = parent.pos
+            self.label.pos = parent.x + 13, parent.y + 18
+
+    def collide_point(self, x, y):
+        return False
+
+
 class CustomMapMarker(MapMarker):
     def __init__(self, *args, row, radiuses, columns, mapview, **kwargs):
         self.row = row
@@ -151,6 +226,7 @@ class CustomMapMarker(MapMarker):
         self.radius = 20
         self.size = self.radius * 2, self.radius * 2
         self.active = False
+        self.tooltip = None
 
         self.canvas.clear()
 
@@ -178,6 +254,17 @@ class CustomMapMarker(MapMarker):
             graphics.PopMatrix()
         self.bind(pos=self.reposition)
         self.set_active(False)
+
+    def close_tooltip(self):
+        if self.tooltip:
+            self.tooltip.close()
+
+    def show_tooltip(self):
+        if not self.tooltip:
+            self.tooltip = Tooltip(self)
+            self.add_widget(self.tooltip)
+            self.reposition()
+        self.tooltip.open()
 
     def on_touch_down(self, touch):
         if self.collide_point(touch.x, touch.y):
@@ -220,6 +307,8 @@ class CustomMapMarker(MapMarker):
 
     def reposition(self, *args):
         self.translation.xy = self.pos
+        if self.tooltip:
+            self.tooltip.reposition()
 
 
 def send_command(**kwargs):
