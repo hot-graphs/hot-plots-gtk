@@ -222,7 +222,7 @@ class IdeaWin(Gtk.Window):
 
     def scale_moved(self, widget):
         self.last_slider_move_index += 1
-        GLib.timeout_add(500, self.apply_scale_moves, self.last_slider_move_index)
+        GLib.timeout_add(10, self.apply_scale_moves, self.last_slider_move_index)
 
     def apply_scale_moves(self, index):
         if self.last_slider_move_index == index:
@@ -248,6 +248,11 @@ class IdeaWin(Gtk.Window):
 
         print('exec', args)
         self.worker_process = worker_process = subprocess.Popen(args)
+
+        child = self.scrolledwindow.get_child()
+        if child:
+            self.scrolledwindow.remove(child)
+        self.scrolledwindow.add(Gtk.Spinner())
 
         def _target():
             try:
