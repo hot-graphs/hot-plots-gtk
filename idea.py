@@ -37,7 +37,7 @@ class IdeaWin(Gtk.Window):
         button2.connect("toggled", self.on_button_toggled, "2")
         self.toolbox.pack_start(button2, False, False, 0)
 
-        self.map_button = Gtk.Button(label="Open Map")
+        self.map_button = Gtk.Button(label="Choose on Map")
         self.map_button.connect("clicked", self.on_map_button_clicked)
         self.toolbox.pack_end(self.map_button, False, False, 0)
 
@@ -106,16 +106,14 @@ class IdeaWin(Gtk.Window):
 
     def _plot(self):
         data = get_temperature_data(id=self.gr_id, axes=(self.x, self.y))
-        plot_temperature_data(data, path="output.svg")
-        child = self.scrolledwindow.get_child()
-        if child:
-            self.scrolledwindow.remove(child)
-        self.img = Gtk.Image.new_from_file('output.svg')
-        self.scrolledwindow.add(self.img)
-        self.show_all()
-        
+        self.show_data(data)
+
     def on_map_point_clicked(self, data):
+        self.map_controller.send_command_if_open(cmd='stop')
         data = get_temperature_data(address=data["Adresa"], axes=(self.x, self.y))
+        self.show_data(data)
+
+    def show_data(self, data):
         plot_temperature_data(data, path="output.svg")
         child = self.scrolledwindow.get_child()
         if child:
@@ -126,9 +124,10 @@ class IdeaWin(Gtk.Window):
 
     def on_map_button_clicked(self, widget):
         from map_controller import MapController
-        self.map_controller = MapController(
-            click_callback=self.on_map_point_clicked,
-        )
+        if not self.map_controller:
+            self.map_controller = MapController(
+                click_callback=self.on_map_point_clicked,
+            )
         self.map_controller.send_command(cmd='start')
 
     def clean_up(self, *args):
