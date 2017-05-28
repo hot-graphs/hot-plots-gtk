@@ -218,6 +218,7 @@ class IdeaWin(Gtk.Window):
             self.show_temperature_data(id=self.gr_id, axes=(self.x, self.y))
 
     def on_map_point_clicked(self, data):
+        print('!')
         self.show_temperature_data(address=data["Adresa"], axes=(self.x, self.y))
 
     def scale_moved(self, widget):
@@ -236,6 +237,8 @@ class IdeaWin(Gtk.Window):
             args.extend(['--greenery', '{},{}'.format(*kwargs['greenery_range'])])
         if 'id' in kwargs:
             args.extend(['--id', kwargs['id']])
+        if 'address' in kwargs:
+            args.extend(['--address', kwargs['address']])
         args.extend(['--x', self.x])
         args.extend(['--y', self.y])
         args.extend(["--width=640", "--height=480"])
