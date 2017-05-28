@@ -30,13 +30,13 @@ class IdeaWin(Gtk.Window):
         self.set_icon_from_file("logo.png")
 
         button1 = Gtk.RadioButton.new_from_widget(None)
-        button1.set_label("Single sensor")
-        button1.connect("toggled", self.on_button_toggled, "1")
+        button1.set_label("Single Plot")
+        button1.connect("toggled", self.on_toolbar_button_toggled, "1")
         self.toolbox.pack_start(button1, False, False, 0)
 
         button2 = Gtk.RadioButton.new_from_widget(button1)
         button2.set_label("Comparison")
-        button2.connect("toggled", self.on_button_toggled, "2")
+        button2.connect("toggled", self.on_toolbar_button_toggled, "2")
         self.toolbox.pack_start(button2, False, False, 0)
 
         self.map_button = Gtk.Button(label="Choose on Map")
@@ -82,6 +82,20 @@ class IdeaWin(Gtk.Window):
         self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
         #self.opt_box.pack_start(self.listbox, False, False, 0)
         self.filebox.pack_start(self.listbox, False, False, 0)
+        row = Gtk.ListBoxRow()
+        self.listbox.add(row)
+        hbox = Gtk.Box()
+        row.add(hbox)
+        button1 = Gtk.RadioButton.new_from_widget(None)
+        button1.set_label("Address")
+        button1.connect("toggled", self.on_selector_button_toggled, "1")
+        hbox.pack_start(button1, False, False, 0)
+
+        button2 = Gtk.RadioButton.new_from_widget(button1)
+        button2.set_label("Filters")
+        button2.connect("toggled", self.on_selector_button_toggled, "2")
+        hbox.pack_start(button2, False, False, 0)
+
 
         row = Gtk.ListBoxRow()
         self.listbox.add(row)
@@ -168,7 +182,7 @@ class IdeaWin(Gtk.Window):
         inner_vbox.pack_start(slider_box, False, False, 15)
 
         slider_box.pack_start(self.alt_max_scale, True, True, 0)
-        
+
         row = Gtk.ListBoxRow()
         self.listbox.add(row)
         vbox = Gtk.VBox()
@@ -258,7 +272,10 @@ class IdeaWin(Gtk.Window):
             )
         self.map_controller.send_command(cmd='start')
 
-    def on_button_toggled(self):
+    def on_toolbar_button_toggled(self, widget, arg):
+        pass
+
+    def on_selector_button_toggled(self, widget, arg):
         pass
 
     def clean_up(self, *args):
