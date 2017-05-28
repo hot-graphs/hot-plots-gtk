@@ -109,7 +109,6 @@ class IdeaWin(Gtk.Window):
         self.show_data(data)
 
     def on_map_point_clicked(self, data):
-        self.map_controller.send_command_if_open(cmd='stop')
         data = get_temperature_data(address=data["Adresa"], axes=(self.x, self.y))
         self.show_data(data)
 
