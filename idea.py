@@ -68,7 +68,7 @@ class IdeaWin(Gtk.Window):
         self.outerbox.set_vexpand(True)
         self.scrolledwindow_tree.add(self.filesystemTreeView)
         self.filesystemTreeView.connect("row-activated", self.on_click)
-        self.filebox.pack_start(self.scrolledwindow_tree, True, True, 0)
+        #self.filebox.pack_start(self.scrolledwindow_tree, True, True, 0)
 
         self.graph_box = Gtk.VBox()
         self.mainbox.pack_start(self.graph_box, False, False, 0)
@@ -78,7 +78,8 @@ class IdeaWin(Gtk.Window):
 
         self.listbox = Gtk.ListBox()
         self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
-        self.opt_box.pack_start(self.listbox, False, False, 0)
+        #self.opt_box.pack_start(self.listbox, False, False, 0)
+        self.filebox.pack_start(self.listbox, False, False, 0)
 
         row = Gtk.ListBoxRow()
         self.listbox.add(row)
@@ -119,15 +120,33 @@ class IdeaWin(Gtk.Window):
 
         ad1 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
         ad2 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
-        ad3 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
-        
-        min_scale = Gtk.Scale(
-            orientation=Gtk.Orientation.HORIZONTAL, adjustment=ad1)
-        min_scale.set_digits(0)
-        min_scale.set_hexpand(True)
-        min_scale.connect("value-changed", self.scale_moved)
 
-        slider_box.pack_start(min_scale, True, True, 0)
+        self.green_min_scale = Gtk.Scale(
+            orientation=Gtk.Orientation.HORIZONTAL, adjustment=ad1)
+        self.green_min_scale.set_valign(Gtk.Align.START)
+        self.green_min_scale.set_digits(0)
+        self.green_min_scale.set_hexpand(True)
+        self.green_min_scale.connect("value-changed", self.scale_moved)
+
+        self.green_max_scale = Gtk.Scale(
+            orientation=Gtk.Orientation.HORIZONTAL, adjustment=ad2)
+        self.green_max_scale.set_valign(Gtk.Align.START)
+        self.green_max_scale.set_digits(0)
+        self.green_max_scale.set_hexpand(True)
+        self.green_max_scale.connect("value-changed", self.scale_moved)
+
+        slider_box.pack_start(self.green_min_scale, True, True, 0)
+        
+        slider_box = Gtk.Box()
+        inner_vbox.pack_start(slider_box, False, False, 15)
+
+        slider_box.pack_start(self.green_max_scale, True, True, 0)
+
+        button_box = Gtk.Box()
+        inner_vbox.pack_start(button_box, False, False, 15)
+        button = Gtk.Button(label="Apply Changes")
+        button_box.pack_end(button, False, False, 5)
+        button.connect("clicked", self.apply_filters)
 
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
@@ -166,6 +185,9 @@ class IdeaWin(Gtk.Window):
         pass
 
     def scale_moved(self, widget):
+        pass
+
+    def apply_filters(self, widget):
         pass
 
     def clean_up(self, *args):
