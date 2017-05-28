@@ -1,4 +1,9 @@
 #! /usr/bin/env python3
+import subprocess
+import threading
+import sys
+import os
+
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 # from matplotlib.backends.backend_gtk3cairo import FigureCanvasGTK3Cairo as FigureCanvas
@@ -7,10 +12,10 @@ from gi.repository import GObject
 from gi.repository import GLib
 from physt.io import load_json
 import os
-from data_source import *
 import gtk
 from time import time
 from data_source import get_point_tree
+import random
 
 
 class IdeaWin(Gtk.Window):
@@ -30,13 +35,13 @@ class IdeaWin(Gtk.Window):
         self.set_icon_from_file("logo.png")
 
         button1 = Gtk.RadioButton.new_from_widget(None)
-        button1.set_label("Single sensor")
-        button1.connect("toggled", self.on_button_toggled, "1")
+        button1.set_label("Single Plot")
+        button1.connect("toggled", self.on_toolbar_button_toggled, "1")
         self.toolbox.pack_start(button1, False, False, 0)
 
         button2 = Gtk.RadioButton.new_from_widget(button1)
         button2.set_label("Comparison")
-        button2.connect("toggled", self.on_button_toggled, "2")
+        button2.connect("toggled", self.on_toolbar_button_toggled, "2")
         self.toolbox.pack_start(button2, False, False, 0)
 
         self.map_button = Gtk.Button(label="Choose on Map")
@@ -82,29 +87,21 @@ class IdeaWin(Gtk.Window):
         self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
         #self.opt_box.pack_start(self.listbox, False, False, 0)
         self.filebox.pack_start(self.listbox, False, False, 0)
-
         row = Gtk.ListBoxRow()
         self.listbox.add(row)
-        vbox = Gtk.VBox()
-        row.add(vbox)
         hbox = Gtk.Box()
-        vbox.pack_start(hbox, False, False, 0)
-        label = Gtk.Label("X axis: ")
-        hbox.pack_start(label, False, False, 0)
+        row.add(hbox)
+        button1 = Gtk.RadioButton.new_from_widget(None)
+        button1.set_label("Address")
+        button1.connect("toggled", self.on_selector_button_toggled, "1")
+        hbox.pack_start(button1, False, False, 0)
+        button1.connect('toggled', self._plot)
 
-        interval_store = Gtk.ListStore(str)
-        intervals = ["hour", "month"]
-        for interval in intervals:
-            interval_store.append([interval])
-
-        self.interval_combo = Gtk.ComboBox.new_with_model(interval_store)
-        self.interval_combo.set_active(0)
-
-        self.interval_combo.connect("changed", self.on_interval_combo_changed)
-        self.renderer_text = Gtk.CellRendererText()
-        self.interval_combo.pack_start(self.renderer_text, False)
-        self.interval_combo.add_attribute(self.renderer_text, "text", 0)
-        hbox.pack_start(self.interval_combo, False, False, 0)
+        self.filters_button = button2 = Gtk.RadioButton.new_from_widget(button1)
+        button2.set_label("Filters")
+        button2.connect("toggled", self.on_selector_button_toggled, "2")
+        hbox.pack_start(button2, False, False, 0)
+        button2.connect('toggled', self._plot)
 
 
         row = Gtk.ListBoxRow()
@@ -113,7 +110,7 @@ class IdeaWin(Gtk.Window):
         hbox = Gtk.Box()
         row.add(vbox)
         vbox.pack_start(hbox, False, False, 0)
-        check = Gtk.Label("Greenery Filter (%)")
+        self.filter_select = check = Gtk.Label("Greenery Filter")
         hbox.pack_start(check, False, False, 0)
         inner_vbox = Gtk.VBox()
         vbox.pack_start(inner_vbox, False, False, 0)
@@ -140,8 +137,9 @@ class IdeaWin(Gtk.Window):
         self.green_max_scale.connect("value-changed", self.scale_moved)
 
         slider_box.pack_start(self.green_min_scale, True, True, 0)
-
         self.last_slider_move_index = 0
+        self.graph_id = 0
+        self.run_id = random.randrange(9999, 10000)
 
         slider_box = Gtk.Box()
         inner_vbox.pack_start(slider_box, False, False, 15)
@@ -157,8 +155,8 @@ class IdeaWin(Gtk.Window):
         hbox = Gtk.Box()
         row.add(vbox)
         vbox.pack_start(hbox, False, False, 0)
-        check = Gtk.Label("Altitude Filter (m)")
-        hbox.pack_start(check, False, False, 0)
+        checkbox = Gtk.Label("Altitude Filter")
+        hbox.pack_start(checkbox, False, False, 0)
 
         inner_vbox = Gtk.VBox()
         vbox.pack_start(inner_vbox, False, False, 0)
@@ -193,6 +191,29 @@ class IdeaWin(Gtk.Window):
 
         slider_box.pack_start(self.alt_max_scale, True, True, 0)
 
+        row = Gtk.ListBoxRow()
+        self.listbox.add(row)
+        vbox = Gtk.VBox()
+        row.add(vbox)
+        hbox = Gtk.Box()
+        vbox.pack_start(hbox, False, False, 0)
+        label = Gtk.Label("X axis: ")
+        hbox.pack_start(label, False, False, 0)
+
+        interval_store = Gtk.ListStore(str)
+        intervals = ["hour", "month"]
+        for interval in intervals:
+            interval_store.append([interval])
+
+        self.interval_combo = Gtk.ComboBox.new_with_model(interval_store)
+        self.interval_combo.set_active(0)
+
+        self.interval_combo.connect("changed", self.on_interval_combo_changed)
+        self.renderer_text = Gtk.CellRendererText()
+        self.interval_combo.pack_start(self.renderer_text, False)
+        self.interval_combo.add_attribute(self.renderer_text, "text", 0)
+        hbox.pack_start(self.interval_combo, False, False, 0)
+
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
         self.graph_box.pack_start(self.scrolledwindow, True, True, 0)
@@ -201,13 +222,28 @@ class IdeaWin(Gtk.Window):
 
         self.show_all()
 
-    def _plot(self):
-        data = get_temperature_data(id=self.gr_id, axes=(self.x, self.y))
-        self.show_data(data)
+        self.worker_process = None
+
+    def _plot(self, *args):
+        if self.filters_button.get_active():
+            greenery_range = (
+                self.green_min_scale.get_value()/100,
+                self.green_max_scale.get_value()/100,
+            )
+            altitude_range = (
+                int(self.alt_min_scale.get_value()),
+                int(self.alt_max_scale.get_value()),
+            )
+            self.show_temperature_data(
+                greenery_range=greenery_range,
+                altitude_range=altitude_range,
+                axes=(self.x, self.y),
+            )
+        else:
+            self.show_temperature_data(id=self.gr_id, axes=(self.x, self.y))
 
     def on_map_point_clicked(self, data):
-        data = get_temperature_data(address=data["Adresa"], axes=(self.x, self.y))
-        self.show_data(data)
+        self.show_temperature_data(address=data["Adresa"], axes=(self.x, self.y))
 
     def scale_moved(self, widget):
         self.last_slider_move_index += 1
@@ -215,28 +251,47 @@ class IdeaWin(Gtk.Window):
 
     def apply_scale_moves(self, index):
         if self.last_slider_move_index == index:
-            self.apply_filters()
+            self._plot()
 
-    def apply_filters(self):
-        greenery_range = (self.green_min_scale.get_value()/100, self.green_max_scale.get_value()/100)
-        altitude_range = (int(self.alt_min_scale.get_value()), int(self.alt_max_scale.get_value()))
-        print('apply', greenery_range, altitude_range)
-        data = get_temperature_data(
-            greenery_range=greenery_range,
-            altitude_range=altitude_range,
-            axes=(self.x, self.y),
-        )
-        print('applied')
-        self.show_data(data)
+    def show_temperature_data(self, **kwargs):
+        args = [sys.executable, 'batch.py']
+        if 'altitude_range' in kwargs:
+            args.extend(['--altitude', '{},{}'.format(*kwargs['altitude_range'])])
+        if 'greenery_range' in kwargs:
+            args.extend(['--greenery', '{},{}'.format(*kwargs['greenery_range'])])
+        if 'id' in kwargs:
+            args.extend(['--id', kwargs['id']])
+        args.extend(['--x', self.x])
+        args.extend(['--y', self.y])
+        self.graph_id += 1
+        outfile = 'output-{}-{}.svg'.format(self.run_id, self.graph_id)
+        args.extend([outfile])
 
-    def show_data(self, data):
-        plot_temperature_data(data, path="output.svg", width= 600, height=400)
+        def _target():
+            try:
+                print('exec', args)
+                worker_process = subprocess.Popen(args)
+                worker_process.communicate()
+                print('done', worker_process.returncode, outfile)
+                if worker_process.returncode == 0:
+                    GLib.idle_add(self.show_image, outfile)
+                else:
+                    os.unlink(outfile)
+            except Exception:
+                os.unlink(outfile)
+                raise
+
+        threading.Thread(target=_target).start()
+
+    def show_image(self, filename):
         child = self.scrolledwindow.get_child()
         if child:
             self.scrolledwindow.remove(child)
-        self.img = Gtk.Image.new_from_file('output.svg')
+        print('show', filename)
+        self.img = Gtk.Image.new_from_file(filename)
         self.scrolledwindow.add(self.img)
         self.show_all()
+        os.unlink(filename)
 
     def on_map_button_clicked(self, widget):
         from map_controller import MapController
@@ -246,7 +301,10 @@ class IdeaWin(Gtk.Window):
             )
         self.map_controller.send_command(cmd='start')
 
-    def on_button_toggled(self):
+    def on_toolbar_button_toggled(self, widget, arg):
+        pass
+
+    def on_selector_button_toggled(self, widget, arg):
         pass
 
     def clean_up(self, *args):
