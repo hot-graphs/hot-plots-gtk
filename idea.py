@@ -289,8 +289,9 @@ class IdeaWin(Gtk.Window):
             args.extend(['--id', kwargs['id']])
         args.extend(['--x', self.x])
         args.extend(['--y', self.y])
+        args.extend(["--width=640", "--height=480"])
         self.graph_id += 1
-        outfile = 'output-{}-{}.svg'.format(self.run_id, self.graph_id)
+        outfile = 'output-{}-{}.png'.format(self.run_id, self.graph_id)
         args.extend([outfile])
 
         if self.worker_process:
