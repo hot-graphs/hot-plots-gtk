@@ -96,10 +96,11 @@ class IdeaWin(Gtk.Window):
         button1.connect("toggled", self.on_selector_button_toggled, "1")
         hbox.pack_start(button1, False, False, 0)
 
-        button2 = Gtk.RadioButton.new_from_widget(button1)
+        self.filters_button = button2 = Gtk.RadioButton.new_from_widget(button1)
         button2.set_label("Filters")
         button2.connect("toggled", self.on_selector_button_toggled, "2")
         hbox.pack_start(button2, False, False, 0)
+        button2.connect('toggled', self._plot)
 
 
         row = Gtk.ListBoxRow()
@@ -108,13 +109,12 @@ class IdeaWin(Gtk.Window):
         hbox = Gtk.Box()
         row.add(vbox)
         vbox.pack_start(hbox, False, False, 0)
-        self.filter_select = check = Gtk.CheckButton("Greenery Filter")
+        self.filter_select = check = Gtk.Label("Greenery Filter")
         hbox.pack_start(check, False, False, 0)
         inner_vbox = Gtk.VBox()
         vbox.pack_start(inner_vbox, False, False, 0)
         slider_box = Gtk.Box()
         inner_vbox.pack_start(slider_box, False, False, 15)
-        check.connect('toggled', self._plot)
 
         ad1 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
         ad2 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
@@ -154,7 +154,7 @@ class IdeaWin(Gtk.Window):
         hbox = Gtk.Box()
         row.add(vbox)
         vbox.pack_start(hbox, False, False, 0)
-        checkbox = Gtk.CheckButton("Altitude Filter")
+        checkbox = Gtk.Label("Altitude Filter")
         hbox.pack_start(checkbox, False, False, 0)
 
         inner_vbox = Gtk.VBox()
@@ -230,7 +230,7 @@ class IdeaWin(Gtk.Window):
         self.worker_process = None
 
     def _plot(self, *args):
-        if self.filter_select.get_active():
+        if self.filters_button.get_active():
             greenery_range = (
                 self.green_min_scale.get_value()/100,
                 self.green_max_scale.get_value()/100,
@@ -274,12 +274,17 @@ class IdeaWin(Gtk.Window):
 
         def _target():
             try:
+                print('exec', args)
                 worker_process = subprocess.Popen(args)
                 worker_process.communicate()
+                print('done', worker_process.returncode, outfile)
                 if worker_process.returncode == 0:
                     GLib.idle_add(self.show_image, outfile)
-            finally:
+                else:
+                    os.unlink(outfile)
+            except Exception:
                 os.unlink(outfile)
+                raise
 
         threading.Thread(target=_target).start()
 
@@ -287,9 +292,11 @@ class IdeaWin(Gtk.Window):
         child = self.scrolledwindow.get_child()
         if child:
             self.scrolledwindow.remove(child)
+        print('show', filename)
         self.img = Gtk.Image.new_from_file(filename)
         self.scrolledwindow.add(self.img)
         self.show_all()
+        os.unlink(filename)
 
     def on_map_button_clicked(self, widget):
         from map_controller import MapController
