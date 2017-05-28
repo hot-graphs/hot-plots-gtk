@@ -1,5 +1,5 @@
-data_source module
-==================
+Plot Backend
+============
 
 .. automodule:: data_source
     :members:

@@ -3,13 +3,19 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Hot Plots's documentation!
-=====================================
+Hot Plots Library
+=================
+
+Data preparation and visualization scripts for temperature data in Brno.
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
+
+   data_source
+   prepare
+   idea
 
 
 

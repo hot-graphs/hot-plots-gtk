@@ -1,5 +1,5 @@
-prepare module
-==============
+Data Preparation Tools
+======================
 
 .. automodule:: prepare
     :members:
