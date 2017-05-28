@@ -3,6 +3,7 @@ import subprocess
 import threading
 import sys
 import os
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
@@ -17,6 +18,7 @@ from time import time
 from data_source import get_point_tree
 import random
 
+os.chdir(str(Path(__file__).resolve().parent))
 
 MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
