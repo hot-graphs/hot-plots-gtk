@@ -18,6 +18,8 @@ from data_source import get_point_tree
 import random
 
 
+MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
 class IdeaWin(Gtk.Window):
     def __init__(self):
         GObject.threads_init()
@@ -172,15 +174,25 @@ class IdeaWin(Gtk.Window):
 
         filters_box.pack_start(Gtk.Box(), True, True, 100)
 
+        self._junk = []
+
         self.x_axis_tab_widget = Gtk.Notebook()
         self.filebox.pack_start(self.tab_widget, True, True, 0)
-        self.x_axis_tab_widget .connect('switch-page', self._plot)
+        self.x_axis_tab_widget.connect('switch-page', self._plot_later)
 
-        address_scroll_window = Gtk.ScrolledWindow()
-        address_scroll_window.add(self.filesystemTreeView)
-        self.x_axis_tab_widget .append_page(address_scroll_window, Gtk.Label('By Month'))
-        filters_box = Gtk.VBox()
-        self.x_axis_tab_widget.append_page(filters_box, Gtk.Label('By Hour'))
+        hour_vbox = Gtk.VBox()
+        hour_vbox.pack_start(Gtk.Label('Filter by Hour:'), False, False, 0)
+        self.hour_combo = self._combo_from_values(["All"] + [
+            '{}:00-{}:00'.format(x, x+1) for x in range(0, 24)
+        ])
+        hour_vbox.pack_start(self.hour_combo, False, False, 0)
+        self.x_axis_tab_widget.append_page(hour_vbox, Gtk.Label('By Month'))
+
+        mon_vbox = Gtk.VBox()
+        mon_vbox.pack_start(Gtk.Label('Filter by Month:'), False, False, 0)
+        self.mon_combo = self._combo_from_values(["All"] + MONTH_NAMES)
+        mon_vbox.pack_start(self.mon_combo, False, False, 0)
+        self.x_axis_tab_widget.append_page(mon_vbox, Gtk.Label('By Hour'))
 
         self.filebox.pack_end(self.x_axis_tab_widget , False, False, 0)
 
@@ -189,18 +201,53 @@ class IdeaWin(Gtk.Window):
         self.graph_box.pack_start(self.scrolledwindow, True, True, 0)
 
         self.gr_id = self.filesystemTreeStore.get(self.filesystemTreeStore.get_iter((5,1)), 1)[0]
-        self._plot()
 
         self.show_all()
 
         self.x_axis_tab_widget.set_current_page(1)
 
+        self._plot()
+
+    def _combo_from_values(self, values):
+        row = Gtk.ListBoxRow()
+        self.listbox.add(row)
+        interval_hbox = Gtk.Box()
+        label = Gtk.Label("X axis: ")
+        interval_hbox.pack_start(label, False, False, 0)
+
+        interval_store = Gtk.ListStore(str)
+        for interval in values:
+            interval_store.append([interval])
+
+        self.interval_combo = Gtk.ComboBox.new_with_model(interval_store)
+        self.interval_combo.set_active(0)
+
+        self.interval_combo.connect("changed", self._plot_later)
+        self.renderer_text = Gtk.CellRendererText()
+        self.interval_combo.pack_start(self.renderer_text, False)
+        self.interval_combo.add_attribute(self.renderer_text, "text", 0)
+        self.interval_combo.set_active_id(values[0])
+
+        return self.interval_combo
+
+    def _plot_later(self, *args):
+        GLib.idle_add(self._plot)
+
     def _plot(self, *args):
         print(self.x_axis_tab_widget.get_current_page())
-        if self.x_axis_tab_widget.get_current_page() == 1:
+        extra_args = {}
+        if self.x_axis_tab_widget.get_current_page() == 0:
             self.x = 'month'
+            act = self.hour_combo.get_active()
+            if act != 0:
+                extra_args = {'hour': act-1}
         else:
             self.x = 'hour'
+            act = self.mon_combo.get_active()
+            if act != 0:
+                extra_args = {'month': act}
+        print('EA', extra_args, self.x_axis_tab_widget.get_current_page(),
+              self.hour_combo.get_active(), self.mon_combo.get_active())
         if self.tab_widget.get_current_page() == 1:
             greenery_range = (
                 self.green_min_scale.get_value()/100,
@@ -214,9 +261,10 @@ class IdeaWin(Gtk.Window):
                 greenery_range=greenery_range,
                 altitude_range=altitude_range,
                 axes=(self.x, self.y),
+                **extra_args
             )
         else:
-            self.show_temperature_data(id=self.gr_id, axes=(self.x, self.y))
+            self.show_temperature_data(id=self.gr_id, axes=(self.x, self.y), **extra_args)
 
     def on_map_point_clicked(self, data):
         print('!')
@@ -240,6 +288,10 @@ class IdeaWin(Gtk.Window):
             args.extend(['--id', kwargs['id']])
         if 'address' in kwargs:
             args.extend(['--address', kwargs['address']])
+        if 'month' in kwargs:
+            args.extend(['--month', str(kwargs['month'])])
+        if 'hour' in kwargs:
+            args.extend(['--hour', str(kwargs['hour'])])
         args.extend(['--x', self.x])
         args.extend(['--y', self.y])
         args.extend(["--width=640", "--height=480"])
