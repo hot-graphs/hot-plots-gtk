@@ -1,5 +1,5 @@
-Application
-===========
+GUI Application
+===============
 
 .. automodule:: idea
     :members:

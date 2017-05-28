@@ -8,6 +8,8 @@ Hot Plots Library
 
 Visualization tool and library for temperature data in Brno.
 
+.. image :: example.png
+
 Contents:
 
 .. toctree::
@@ -16,7 +18,7 @@ Contents:
    data_source
    prepare
    idea
-
+   batch
 
 
 Indices and tables
@@ -26,3 +28,4 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+See: https://github.com/hot-graphs/hot-plots-gtk
