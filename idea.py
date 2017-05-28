@@ -191,6 +191,12 @@ class IdeaWin(Gtk.Window):
         self.interval_combo.add_attribute(self.renderer_text, "text", 0)
         hbox.pack_start(self.interval_combo, False, False, 0)
 
+        button_box = Gtk.Box()
+        inner_vbox.pack_start(button_box, False, False, 15)
+        button = Gtk.Button(label="Apply Filters")
+        button_box.pack_end(button, False, False, 5)
+        button.connect("clicked", self.apply_filters)
+
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
         self.graph_box.pack_start(self.scrolledwindow, True, True, 0)
@@ -200,31 +206,32 @@ class IdeaWin(Gtk.Window):
         self.show_all()
 
     def _plot(self):
-        data = get_temperature_data(id=self.gr_id, axes=(self.x, self.y))
-        self.show_data(data)
+        self.show_temperature_data(id=self.gr_id, axes=(self.x, self.y))
 
     def on_map_point_clicked(self, data):
-        data = get_temperature_data(address=data["Adresa"], axes=(self.x, self.y))
-        self.show_data(data)
+        self.show_temperature_data(address=data["Adresa"], axes=(self.x, self.y))
 
     def scale_moved(self, widget):
         self.last_slider_move_index += 1
-        GLib.timeout_add(500, self.apply_scale_moves, self.last_slider_move_index)
+        #GLib.timeout_add(500, self.apply_scale_moves, self.last_slider_move_index)
 
     def apply_scale_moves(self, index):
         if self.last_slider_move_index == index:
             self.apply_filters()
 
-    def apply_filters(self):
+    def apply_filters(self, *args):
         greenery_range = (self.green_min_scale.get_value()/100, self.green_max_scale.get_value()/100)
         altitude_range = (int(self.alt_min_scale.get_value()), int(self.alt_max_scale.get_value()))
-        print('apply', greenery_range, altitude_range)
-        data = get_temperature_data(
+        self.show_temperature_data(
             greenery_range=greenery_range,
             altitude_range=altitude_range,
             axes=(self.x, self.y),
         )
-        print('applied')
+
+    def show_temperature_data(self, **kwargs):
+        print('Getting data...')
+        data = get_temperature_data(**kwargs)
+        print('Got data')
         self.show_data(data)
 
     def show_data(self, data):
