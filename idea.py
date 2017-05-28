@@ -1,4 +1,9 @@
 #! /usr/bin/env python3
+import subprocess
+import threading
+import sys
+import os
+
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 # from matplotlib.backends.backend_gtk3cairo import FigureCanvasGTK3Cairo as FigureCanvas
@@ -7,10 +12,10 @@ from gi.repository import GObject
 from gi.repository import GLib
 from physt.io import load_json
 import os
-from data_source import *
 import gtk
 from time import time
 from data_source import get_point_tree
+import random
 
 
 class IdeaWin(Gtk.Window):
@@ -132,6 +137,8 @@ class IdeaWin(Gtk.Window):
 
         slider_box.pack_start(self.green_min_scale, True, True, 0)
         self.last_slider_move_index = 0
+        self.graph_id = 0
+        self.run_id = random.randrange(9999, 10000)
 
         slider_box = Gtk.Box()
         inner_vbox.pack_start(slider_box, False, False, 15)
@@ -220,6 +227,8 @@ class IdeaWin(Gtk.Window):
 
         self.show_all()
 
+        self.worker_process = None
+
     def _plot(self, *args):
         if self.filter_select.get_active():
             greenery_range = (
@@ -250,17 +259,35 @@ class IdeaWin(Gtk.Window):
             self._plot()
 
     def show_temperature_data(self, **kwargs):
-        print('Getting data...')
-        data = get_temperature_data(**kwargs)
-        print('Got data')
-        self.show_data(data)
+        args = [sys.executable, 'batch.py']
+        if 'altitude_range' in kwargs:
+            args.extend(['--altitude', '{},{}'.format(*kwargs['altitude_range'])])
+        if 'greenery_range' in kwargs:
+            args.extend(['--greenery', '{},{}'.format(*kwargs['greenery_range'])])
+        if 'id' in kwargs:
+            args.extend(['--id', kwargs['id']])
+        args.extend(['--x', self.x])
+        args.extend(['--y', self.y])
+        self.graph_id += 1
+        outfile = 'output-{}-{}.svg'.format(self.run_id, self.graph_id)
+        args.extend([outfile])
 
-    def show_data(self, data):
-        plot_temperature_data(data, path="output.svg", width= 600, height=400)
+        def _target():
+            try:
+                worker_process = subprocess.Popen(args)
+                worker_process.communicate()
+                if worker_process.returncode == 0:
+                    GLib.idle_add(self.show_image, outfile)
+            finally:
+                os.unlink(outfile)
+
+        threading.Thread(target=_target).start()
+
+    def show_image(self, filename):
         child = self.scrolledwindow.get_child()
         if child:
             self.scrolledwindow.remove(child)
-        self.img = Gtk.Image.new_from_file('output.svg')
+        self.img = Gtk.Image.new_from_file(filename)
         self.scrolledwindow.add(self.img)
         self.show_all()
 
