@@ -1,13 +1,15 @@
+#!/usr/bin/env python3
 """Functions to prepare aggregate data from raw CSV data."""
 
 import os
+import click
 import numpy as np
 import pandas as pd
 from physt import histogramdd
 
 
 def parse_data_file(path, min_year=2013, max_year=2015, min_temp=-50, max_temp=50):
-    """Prepare dataframe from CSV source.
+    """Prepare dataframe from CSV temperature source.
     
     Parameters
     ----------
@@ -53,6 +55,12 @@ def parse_data_file(path, min_year=2013, max_year=2015, min_temp=-50, max_temp=5
 def create_histogram(data, id):
     """From dataset, create a histogram for one sensor.
     
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Columns year, month, hour, temperature, id are used.
+    id : str
+    
     Returns
     -------
     histogram : physt.histogram_nd.HistogramND
@@ -68,18 +76,20 @@ def create_histogram(data, id):
 
 
 def create_histogram_files(data, dir_path="data"):
-    """For each sensor in a dataset, create a 4D histogram.
+    """For each sensor in a dataset, create a 4D histogram JSON file.
     
     Parameters
     ----------
     data : pd.DataFrame
         Dataset with data from different sensors.
         (as prepared using parse_data_file)
+    dir_path : str
+        Where to write the histogram JSONs to (automatically created)
     
     Returns
     -------
     files : list
-        Names of files produced
+        Paths of files produced
     """
     os.makedirs(dir_path, exist_ok=True)
     result = []
@@ -89,3 +99,15 @@ def create_histogram_files(data, dir_path="data"):
         result.append(path)
         histogram.to_json(path=path)
     return result
+    
+
+@click.argument("outdir")
+@click.argument("infile")
+@click.command()
+def run(infile, outdir):
+    data = parse_data_file(infile)
+    create_histogram_files(data, outdir)
+
+
+if __name__ == "__main__":
+    run()
