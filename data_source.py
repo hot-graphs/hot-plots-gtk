@@ -175,6 +175,9 @@ def get_temperature_data(id=None, address=None, altitude_range=None, greenery_ra
         data = sum(histograms)
         left_text = ", ".join(left_texts)
         
+    if not data:
+        return None
+        
     # Do the projections / slicing
     right_texts = []
     if year:
@@ -218,30 +221,36 @@ def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800,
         fig, ax = plt.subplots(figsize=(10, height/width * 10))
     else:
         fig = ax.figure
-    if histtype is None:
-        histtype = ["bar", "image"][histogram.ndim - 1]
-    histogram.plot(kind=histtype, ax=ax, show_colorbar=False, cmap="Purples")
-    if histogram.axis_names[0] == "month":
-        ax.set_xticks(range(1,13))
-        ax.set_xticklabels(MONTH_NAMES)
-    if histogram.axis_names[0] == "hour":
-        hours = list(range(3, 23, 3))
-        ax.set_xticks(hours)
-        ax.set_xticklabels([str(h) + ":00" for h in hours])
-        minor_locator = MultipleLocator(1)
-        ax.xaxis.set_minor_locator(minor_locator)
-    if histogram.axis_names[0] == "year":
-        ax.set_xticks([2013, 2014, 2015])
-        ax.set_xticklabels([2013, 2014, 2015])
-    if histogram.axis_names[0] == "temperature":
-        minor_locator = MultipleLocator(2)
-        ax.yaxis.set_minor_locator(minor_locator)
-        ax.set_xlabel("Temperature [°C]")
-    if histogram.axis_names[1] == "temperature":
-        minor_locator = MultipleLocator(2)
-        ax.yaxis.set_minor_locator(minor_locator)
-        ax.set_ylabel("Temperature [°C]")
-    ax.set_ylim(-20, 40)
+    if histogram is not None:
+        if histtype is None:
+            histtype = ["bar", "image"][histogram.ndim - 1]        
+        histogram.plot(kind=histtype, ax=ax, show_colorbar=False, cmap="Purples")
+        if histogram.axis_names[0] == "month":
+            ax.set_xticks(range(1,13))
+            ax.set_xticklabels(MONTH_NAMES)
+        if histogram.axis_names[0] == "hour":
+            hours = list(range(3, 23, 3))
+            ax.set_xticks(hours)
+            ax.set_xticklabels([str(h) + ":00" for h in hours])
+            minor_locator = MultipleLocator(1)
+            ax.xaxis.set_minor_locator(minor_locator)
+        if histogram.axis_names[0] == "year":
+            ax.set_xticks([2013, 2014, 2015])
+            ax.set_xticklabels([2013, 2014, 2015])
+        if histogram.axis_names[0] == "temperature":
+            minor_locator = MultipleLocator(2)
+            ax.yaxis.set_minor_locator(minor_locator)
+            ax.set_xlabel("Temperature [°C]")
+        if histogram.axis_names[1] == "temperature":
+            minor_locator = MultipleLocator(2)
+            ax.yaxis.set_minor_locator(minor_locator)
+            ax.set_ylabel("Temperature [°C]")
+        ax.set_ylim(-20, 40)
+    else:
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.text(0.5, 0.5, 'No sensors fit the criteria', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontdict={"size": 34, "color":"red"})
+
     if path:
         fig.tight_layout()
         fig.savefig(path, dpi=width/10)

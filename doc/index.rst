@@ -6,7 +6,7 @@
 Hot Plots Library
 =================
 
-Data preparation and visualization scripts for temperature data in Brno.
+Visualization tool and library for temperature data in Brno.
 
 Contents:
 
