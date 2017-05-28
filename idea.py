@@ -1,4 +1,9 @@
 #! /usr/bin/env python3
+import subprocess
+import threading
+import sys
+import os
+
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 # from matplotlib.backends.backend_gtk3cairo import FigureCanvasGTK3Cairo as FigureCanvas
@@ -7,10 +12,10 @@ from gi.repository import GObject
 from gi.repository import GLib
 from physt.io import load_json
 import os
-from data_source import *
 import gtk
 from time import time
 from data_source import get_point_tree
+import random
 
 
 class IdeaWin(Gtk.Window):
@@ -29,15 +34,15 @@ class IdeaWin(Gtk.Window):
         self.outerbox.pack_start(self.toolbox, False, False, 0)
         self.set_icon_from_file("logo.png")
 
-        button1 = Gtk.RadioButton.new_from_widget(None)
-        button1.set_label("Single Plot")
-        button1.connect("toggled", self.on_toolbar_button_toggled, "1")
-        self.toolbox.pack_start(button1, False, False, 0)
+        self.cmp_button = Gtk.Button(label="Compare")
+        self.cmp_button.connect("clicked", self.on_compare)
+        self.cmp_button.set_sensitive(False)
+        self.toolbox.pack_start(self.cmp_button, False, False, 0)
 
-        button2 = Gtk.RadioButton.new_from_widget(button1)
-        button2.set_label("Comparison")
-        button2.connect("toggled", self.on_toolbar_button_toggled, "2")
-        self.toolbox.pack_start(button2, False, False, 0)
+        self.single_button = Gtk.Button(label="Single")
+        self.single_button.connect("clicked", self.on_single)
+        self.single_button.set_sensitive(False)
+        self.toolbox.pack_start(self.single_button, False, False, 0)
 
         self.map_button = Gtk.Button(label="Choose on Map")
         self.map_button.connect("clicked", self.on_map_button_clicked)
@@ -46,8 +51,12 @@ class IdeaWin(Gtk.Window):
         self.mainbox = Gtk.Box()
         self.outerbox.pack_end(self.mainbox, True, True, 0)
 
+        self.comparewindow = Gtk.ScrolledWindow()
+        self.comparewindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
+        self.mainbox.pack_start(self.comparewindow, True, True, 0)
+
         self.filebox = Gtk.Box()
-        self.mainbox.pack_end(self.filebox, False, True, 0)
+        self.mainbox.pack_end(self.filebox, False, False, 0)
 
         self.filesystemTreeStore = Gtk.TreeStore(str, str)
         parents = {}
@@ -93,7 +102,7 @@ class IdeaWin(Gtk.Window):
         row.add(self.scrolledwindow_tree)
 
         self.graph_box = Gtk.VBox()
-        self.mainbox.pack_start(self.graph_box, False, False, 0)
+        self.mainbox.pack_start(self.graph_box, True, True, 0)
 
         self.opt_box = Gtk.VBox()
         self.graph_box.pack_end(self.opt_box, False, False, 0)
@@ -111,11 +120,13 @@ class IdeaWin(Gtk.Window):
         button1.set_label("Address")
         button1.connect("toggled", self.on_selector_button_toggled, "1")
         hbox.pack_start(button1, False, False, 0)
+        button1.connect('toggled', self._plot)
 
-        button2 = Gtk.RadioButton.new_from_widget(button1)
+        self.filters_button = button2 = Gtk.RadioButton.new_from_widget(button1)
         button2.set_label("Filters")
         button2.connect("toggled", self.on_selector_button_toggled, "2")
         hbox.pack_start(button2, False, False, 0)
+        button2.connect('toggled', self._plot)
 
 
         row = Gtk.ListBoxRow()
@@ -124,13 +135,12 @@ class IdeaWin(Gtk.Window):
         hbox = Gtk.Box()
         row.add(vbox)
         vbox.pack_start(hbox, False, False, 0)
-        self.filter_select = check = Gtk.CheckButton("Greenery Filter")
+        self.filter_select = check = Gtk.Label("Greenery Filter")
         hbox.pack_start(check, False, False, 0)
         inner_vbox = Gtk.VBox()
         vbox.pack_start(inner_vbox, False, False, 0)
         slider_box = Gtk.Box()
         inner_vbox.pack_start(slider_box, False, False, 15)
-        check.connect('toggled', self._plot)
 
         ad1 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
         ad2 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
@@ -152,7 +162,11 @@ class IdeaWin(Gtk.Window):
         self.green_max_scale.connect("value-changed", self.scale_moved)
 
         slider_box.pack_start(self.green_min_scale, True, True, 0)
+
         self.last_slider_move_index = 0
+        self.graph_id = 0
+        self.run_id = random.randrange(9999, 10000)
+        self.worker_process = None
 
         slider_box = Gtk.Box()
         inner_vbox.pack_start(slider_box, False, False, 15)
@@ -168,7 +182,7 @@ class IdeaWin(Gtk.Window):
         hbox = Gtk.Box()
         row.add(vbox)
         vbox.pack_start(hbox, False, False, 0)
-        checkbox = Gtk.CheckButton("Altitude Filter")
+        checkbox = Gtk.Label("Altitude Filter")
         hbox.pack_start(checkbox, False, False, 0)
 
         inner_vbox = Gtk.VBox()
@@ -227,22 +241,17 @@ class IdeaWin(Gtk.Window):
         self.interval_combo.add_attribute(self.renderer_text, "text", 0)
         hbox.pack_start(self.interval_combo, False, False, 0)
 
-        button_box = Gtk.Box()
-        inner_vbox.pack_start(button_box, False, False, 15)
-        button = Gtk.Button(label="Apply Filters")
-        button_box.pack_end(button, False, False, 5)
-        button.connect("clicked", self._plot)
-
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
         self.graph_box.pack_start(self.scrolledwindow, True, True, 0)
+
         self.gr_id = self.filesystemTreeStore.get(self.filesystemTreeStore.get_iter((5,1)), 1)[0]
         self._plot()
 
         self.show_all()
 
     def _plot(self, *args):
-        if self.filter_select.get_active():
+        if self.filters_button.get_active():
             greenery_range = (
                 self.green_min_scale.get_value()/100,
                 self.green_max_scale.get_value()/100,
@@ -264,26 +273,80 @@ class IdeaWin(Gtk.Window):
 
     def scale_moved(self, widget):
         self.last_slider_move_index += 1
-        #GLib.timeout_add(500, self.apply_scale_moves, self.last_slider_move_index)
+        GLib.timeout_add(500, self.apply_scale_moves, self.last_slider_move_index)
 
     def apply_scale_moves(self, index):
         if self.last_slider_move_index == index:
             self._plot()
 
     def show_temperature_data(self, **kwargs):
-        print('Getting data...')
-        data = get_temperature_data(**kwargs)
-        print('Got data')
-        self.show_data(data)
+        args = [sys.executable, 'batch.py']
+        if 'altitude_range' in kwargs:
+            args.extend(['--altitude', '{},{}'.format(*kwargs['altitude_range'])])
+        if 'greenery_range' in kwargs:
+            args.extend(['--greenery', '{},{}'.format(*kwargs['greenery_range'])])
+        if 'id' in kwargs:
+            args.extend(['--id', kwargs['id']])
+        args.extend(['--x', self.x])
+        args.extend(['--y', self.y])
+        self.graph_id += 1
+        outfile = 'output-{}-{}.svg'.format(self.run_id, self.graph_id)
+        args.extend([outfile])
 
-    def show_data(self, data):
-        plot_temperature_data(data, path="output.svg", width= 600, height=400)
+        if self.worker_process:
+            self.worker_process.kill()
+
+        print('exec', args)
+        self.worker_process = worker_process = subprocess.Popen(args)
+
+        def _target():
+            try:
+                worker_process.communicate()
+                print('done', worker_process.returncode, outfile)
+                if worker_process.returncode == 0:
+                    GLib.idle_add(self.show_image, outfile)
+                else:
+                    if os.path.exists(outfile):
+                        os.unlink(outfile)
+            except Exception:
+                if os.path.exists(outfile):
+                    os.unlink(outfile)
+                raise
+
+        threading.Thread(target=_target).start()
+
+    def show_image(self, filename):
         child = self.scrolledwindow.get_child()
         if child:
             self.scrolledwindow.remove(child)
-        self.img = Gtk.Image.new_from_file('output.svg')
+        print('show', filename)
+        self.img = Gtk.Image.new_from_file(filename)
         self.scrolledwindow.add(self.img)
         self.show_all()
+        if os.path.exists(filename):
+            os.unlink(filename)
+        self.cmp_button.set_sensitive(True)
+
+
+    def on_compare(self, *args):
+        self.single_button.set_sensitive(True)
+
+        child = self.comparewindow.get_child()
+        if child:
+            self.comparewindow.remove(child)
+
+        pixbuf = self.img.get_pixbuf()
+        img = Gtk.Image.new_from_pixbuf(pixbuf)
+
+        self.comparewindow.add(img)
+        self.show_all()
+
+    def on_single(self, *args):
+        self.single_button.set_sensitive(False)
+
+        child = self.comparewindow.get_child()
+        if child:
+            self.comparewindow.remove(child)
 
     def on_map_button_clicked(self, widget):
         from map_controller import MapController
@@ -292,9 +355,6 @@ class IdeaWin(Gtk.Window):
                 click_callback=self.on_map_point_clicked,
             )
         self.map_controller.send_command(cmd='start')
-
-    def on_toolbar_button_toggled(self, widget, arg):
-        pass
 
     def on_selector_button_toggled(self, widget, arg):
         if arg == "1":
