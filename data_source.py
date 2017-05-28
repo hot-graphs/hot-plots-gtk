@@ -245,6 +245,7 @@ def plot_temperature_data(histogram, path=None, ax=None, width=1024, height=800,
     if path:
         fig.tight_layout()
         fig.savefig(path, dpi=width/10)
+    plt.close(fig)
         
         
 # Deprecated!ax.set_xticks([2013, 2014, 2015])
