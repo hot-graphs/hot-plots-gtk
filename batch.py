@@ -13,10 +13,11 @@ from data_source import plot_temperature_data
 @click.option("--id", default="", help="Select concrete ID of a sensor")
 @click.option("--x", default="month", help="What should be displayed on horizontal axis")
 @click.option("--y", default="temperature", help="What should be displayed on vertical axis")
+@click.option("--address", default="", help="Address of sensors")
 @click.option("--width", default=1024)
 @click.option("--height", default=768)
 @click.argument("output_path")
-def batch(x, y, id, output_path, month, hour, year, altitude, greenery, width, height):
+def batch(x, y, id, output_path, month, hour, year, altitude, greenery, width, height, address):
     if not id:
         id = None
     if hour < 0:
@@ -41,7 +42,7 @@ def batch(x, y, id, output_path, month, hour, year, altitude, greenery, width, h
     else:
         greenery=None
     try:
-        data = get_temperature_data(id=id, hour=hour, month=month, year=year, altitude_range=altitude, greenery_range=greenery, axes=(x, y))
+        data = get_temperature_data(id=id, hour=hour, month=month, year=year, altitude_range=altitude, greenery_range=greenery, axes=(x, y), address=address)
     except RuntimeError as err:
         print("Cannot read data.")
         print(err)
