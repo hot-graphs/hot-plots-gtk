@@ -55,8 +55,9 @@ class IdeaWin(Gtk.Window):
         self.comparewindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
         self.mainbox.pack_start(self.comparewindow, True, True, 0)
 
-        self.filebox = Gtk.Box()
+        self.filebox = Gtk.VBox()
         self.filebox.set_halign(Gtk.Align.END)
+        self.filebox.set_hexpand(False)
         self.mainbox.pack_end(self.filebox, False, False, 0)
 
         self.filesystemTreeStore = Gtk.TreeStore(str, str)
@@ -169,12 +170,9 @@ class IdeaWin(Gtk.Window):
 
         row = Gtk.ListBoxRow()
         self.listbox.add(row)
-        vbox = Gtk.VBox()
-        row.add(vbox)
-        hbox = Gtk.Box()
-        vbox.pack_start(hbox, False, False, 0)
+        interval_hbox = Gtk.Box()
         label = Gtk.Label("X axis: ")
-        hbox.pack_start(label, False, False, 0)
+        interval_hbox.pack_start(label, False, False, 0)
 
         interval_store = Gtk.ListStore(str)
         intervals = ["hour", "month"]
@@ -188,7 +186,9 @@ class IdeaWin(Gtk.Window):
         self.renderer_text = Gtk.CellRendererText()
         self.interval_combo.pack_start(self.renderer_text, False)
         self.interval_combo.add_attribute(self.renderer_text, "text", 0)
-        hbox.pack_start(self.interval_combo, False, False, 0)
+        interval_hbox.pack_start(self.interval_combo, False, False, 0)
+
+        self.filebox.pack_end(interval_hbox, False, False, 0)
 
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
