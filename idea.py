@@ -4,9 +4,11 @@ from matplotlib.figure import Figure
 # from matplotlib.backends.backend_gtk3cairo import FigureCanvasGTK3Cairo as FigureCanvas
 from gi.repository import Gtk
 from gi.repository import GObject
+from gi.repository import GLib
 from physt.io import load_json
 import os
 from data_source import *
+import gtk
 from time import time
 from data_source import get_point_tree
 
@@ -111,7 +113,7 @@ class IdeaWin(Gtk.Window):
         hbox = Gtk.Box()
         row.add(vbox)
         vbox.pack_start(hbox, False, False, 0)
-        check = Gtk.CheckButton("Greenary Filter")
+        check = Gtk.Label("Greenery Filter (%)")
         hbox.pack_start(check, False, False, 0)
         inner_vbox = Gtk.VBox()
         vbox.pack_start(inner_vbox, False, False, 0)
@@ -120,8 +122,9 @@ class IdeaWin(Gtk.Window):
 
         ad1 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
         ad2 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
+        ad3 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
 
-        self.green_min_scale = Gtk.Scale(
+        self.green_min_scale = min_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL, adjustment=ad1)
         self.green_min_scale.set_valign(Gtk.Align.START)
         self.green_min_scale.set_digits(0)
@@ -133,14 +136,20 @@ class IdeaWin(Gtk.Window):
         self.green_max_scale.set_valign(Gtk.Align.START)
         self.green_max_scale.set_digits(0)
         self.green_max_scale.set_hexpand(True)
+        self.green_max_scale.set_value(100)
         self.green_max_scale.connect("value-changed", self.scale_moved)
 
         slider_box.pack_start(self.green_min_scale, True, True, 0)
-        
+
+        self.last_slider_move_index = 0
+
         slider_box = Gtk.Box()
         inner_vbox.pack_start(slider_box, False, False, 15)
 
         slider_box.pack_start(self.green_max_scale, True, True, 0)
+        min_scale.set_digits(0)
+        min_scale.set_hexpand(True)
+        min_scale.connect("value-changed", self.scale_moved)
 
         row = Gtk.ListBoxRow()
         self.listbox.add(row)
@@ -148,14 +157,8 @@ class IdeaWin(Gtk.Window):
         hbox = Gtk.Box()
         row.add(vbox)
         vbox.pack_start(hbox, False, False, 0)
-        check = Gtk.CheckButton("Altitude Filter")
+        check = Gtk.Label("Altitude Filter (m)")
         hbox.pack_start(check, False, False, 0)
-
-        button_box = Gtk.Box()
-        inner_vbox.pack_start(button_box, False, False, 15)
-        button = Gtk.Button(label="Apply Changes")
-        button_box.pack_end(button, False, False, 5)
-        button.connect("clicked", self.apply_filters)
 
         inner_vbox = Gtk.VBox()
         vbox.pack_start(inner_vbox, False, False, 0)
@@ -170,6 +173,8 @@ class IdeaWin(Gtk.Window):
         self.alt_min_scale.set_valign(Gtk.Align.START)
         self.alt_min_scale.set_digits(0)
         self.alt_min_scale.set_hexpand(True)
+        self.alt_min_scale.set_range(200, 400)
+        self.alt_min_scale.set_value(200)
         self.alt_min_scale.connect("value-changed", self.scale_moved)
 
         self.alt_max_scale = Gtk.Scale(
@@ -177,6 +182,8 @@ class IdeaWin(Gtk.Window):
         self.alt_max_scale.set_valign(Gtk.Align.START)
         self.alt_max_scale.set_digits(0)
         self.alt_max_scale.set_hexpand(True)
+        self.alt_max_scale.set_range(200, 400)
+        self.alt_max_scale.set_value(400)
         self.alt_max_scale.connect("value-changed", self.scale_moved)
 
         slider_box.pack_start(self.alt_min_scale, True, True, 0)
@@ -185,12 +192,6 @@ class IdeaWin(Gtk.Window):
         inner_vbox.pack_start(slider_box, False, False, 15)
 
         slider_box.pack_start(self.alt_max_scale, True, True, 0)
-
-        button_box = Gtk.Box()
-        inner_vbox.pack_start(button_box, False, False, 15)
-        button = Gtk.Button(label="Apply Changes")
-        button_box.pack_end(button, False, False, 5)
-        button.connect("clicked", self.apply_filters)
 
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
@@ -206,6 +207,26 @@ class IdeaWin(Gtk.Window):
 
     def on_map_point_clicked(self, data):
         data = get_temperature_data(address=data["Adresa"], axes=(self.x, self.y))
+        self.show_data(data)
+
+    def scale_moved(self, widget):
+        self.last_slider_move_index += 1
+        GLib.timeout_add(500, self.apply_scale_moves, self.last_slider_move_index)
+
+    def apply_scale_moves(self, index):
+        if self.last_slider_move_index == index:
+            self.apply_filters()
+
+    def apply_filters(self):
+        greenery_range = (self.green_min_scale.get_value()/100, self.green_max_scale.get_value()/100)
+        altitude_range = (int(self.alt_min_scale.get_value()), int(self.alt_max_scale.get_value()))
+        print('apply', greenery_range, altitude_range)
+        data = get_temperature_data(
+            greenery_range=greenery_range,
+            altitude_range=altitude_range,
+            axes=(self.x, self.y),
+        )
+        print('applied')
         self.show_data(data)
 
     def show_data(self, data):
@@ -226,12 +247,6 @@ class IdeaWin(Gtk.Window):
         self.map_controller.send_command(cmd='start')
 
     def on_button_toggled(self):
-        pass
-
-    def scale_moved(self, widget):
-        pass
-
-    def apply_filters(self, widget):
         pass
 
     def clean_up(self, *args):
