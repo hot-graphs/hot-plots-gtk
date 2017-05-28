@@ -34,15 +34,15 @@ class IdeaWin(Gtk.Window):
         self.outerbox.pack_start(self.toolbox, False, False, 0)
         self.set_icon_from_file("logo.png")
 
-        button1 = Gtk.RadioButton.new_from_widget(None)
-        button1.set_label("Single Plot")
-        button1.connect("toggled", self.on_toolbar_button_toggled, "1")
-        self.toolbox.pack_start(button1, False, False, 0)
+        self.cmp_button = Gtk.Button(label="Compare")
+        self.cmp_button.connect("clicked", self.on_compare)
+        self.cmp_button.set_sensitive(False)
+        self.toolbox.pack_start(self.cmp_button, False, False, 0)
 
-        button2 = Gtk.RadioButton.new_from_widget(button1)
-        button2.set_label("Comparison")
-        button2.connect("toggled", self.on_toolbar_button_toggled, "2")
-        self.toolbox.pack_start(button2, False, False, 0)
+        self.single_button = Gtk.Button(label="Single")
+        self.single_button.connect("clicked", self.on_single)
+        self.single_button.set_sensitive(False)
+        self.toolbox.pack_start(self.single_button, False, False, 0)
 
         self.map_button = Gtk.Button(label="Choose on Map")
         self.map_button.connect("clicked", self.on_map_button_clicked)
@@ -51,8 +51,12 @@ class IdeaWin(Gtk.Window):
         self.mainbox = Gtk.Box()
         self.outerbox.pack_end(self.mainbox, True, True, 0)
 
+        self.comparewindow = Gtk.ScrolledWindow()
+        self.comparewindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
+        self.mainbox.pack_start(self.comparewindow, True, True, 0)
+
         self.filebox = Gtk.Box()
-        self.mainbox.pack_end(self.filebox, False, True, 0)
+        self.mainbox.pack_end(self.filebox, False, False, 0)
 
         self.filesystemTreeStore = Gtk.TreeStore(str, str)
         parents = {}
@@ -78,7 +82,7 @@ class IdeaWin(Gtk.Window):
         #self.filebox.pack_start(self.scrolledwindow_tree, True, True, 0)
 
         self.graph_box = Gtk.VBox()
-        self.mainbox.pack_start(self.graph_box, False, False, 0)
+        self.mainbox.pack_start(self.graph_box, True, True, 0)
 
         self.opt_box = Gtk.VBox()
         self.graph_box.pack_end(self.opt_box, False, False, 0)
@@ -219,6 +223,7 @@ class IdeaWin(Gtk.Window):
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
         self.graph_box.pack_start(self.scrolledwindow, True, True, 0)
+
         self.gr_id = self.filesystemTreeStore.get(self.filesystemTreeStore.get_iter((5,1)), 1)[0]
         self._plot()
 
@@ -299,6 +304,28 @@ class IdeaWin(Gtk.Window):
         self.show_all()
         if os.path.exists(filename):
             os.unlink(filename)
+        self.cmp_button.set_sensitive(True)
+
+
+    def on_compare(self, *args):
+        self.single_button.set_sensitive(True)
+
+        child = self.comparewindow.get_child()
+        if child:
+            self.comparewindow.remove(child)
+
+        pixbuf = self.img.get_pixbuf()
+        img = Gtk.Image.new_from_pixbuf(pixbuf)
+
+        self.comparewindow.add(img)
+        self.show_all()
+
+    def on_single(self, *args):
+        self.single_button.set_sensitive(False)
+
+        child = self.comparewindow.get_child()
+        if child:
+            self.comparewindow.remove(child)
 
     def on_map_button_clicked(self, widget):
         from map_controller import MapController
@@ -307,9 +334,6 @@ class IdeaWin(Gtk.Window):
                 click_callback=self.on_map_point_clicked,
             )
         self.map_controller.send_command(cmd='start')
-
-    def on_toolbar_button_toggled(self, widget, arg):
-        pass
 
     def on_selector_button_toggled(self, widget, arg):
         pass
