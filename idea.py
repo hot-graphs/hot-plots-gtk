@@ -89,12 +89,13 @@ class IdeaWin(Gtk.Window):
         hbox = Gtk.Box()
         row.add(vbox)
         vbox.pack_start(hbox, False, False, 0)
-        check = Gtk.CheckButton("Greenery Filter")
+        self.filter_select = check = Gtk.CheckButton("Greenery Filter")
         hbox.pack_start(check, False, False, 0)
         inner_vbox = Gtk.VBox()
         vbox.pack_start(inner_vbox, False, False, 0)
         slider_box = Gtk.Box()
         inner_vbox.pack_start(slider_box, False, False, 15)
+        check.connect('toggled', self._plot)
 
         ad1 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
         ad2 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
@@ -195,7 +196,7 @@ class IdeaWin(Gtk.Window):
         inner_vbox.pack_start(button_box, False, False, 15)
         button = Gtk.Button(label="Apply Filters")
         button_box.pack_end(button, False, False, 5)
-        button.connect("clicked", self.apply_filters)
+        button.connect("clicked", self._plot)
 
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
@@ -205,8 +206,23 @@ class IdeaWin(Gtk.Window):
 
         self.show_all()
 
-    def _plot(self):
-        self.show_temperature_data(id=self.gr_id, axes=(self.x, self.y))
+    def _plot(self, *args):
+        if self.filter_select.get_active():
+            greenery_range = (
+                self.green_min_scale.get_value()/100,
+                self.green_max_scale.get_value()/100,
+            )
+            altitude_range = (
+                int(self.alt_min_scale.get_value()),
+                int(self.alt_max_scale.get_value()),
+            )
+            self.show_temperature_data(
+                greenery_range=greenery_range,
+                altitude_range=altitude_range,
+                axes=(self.x, self.y),
+            )
+        else:
+            self.show_temperature_data(id=self.gr_id, axes=(self.x, self.y))
 
     def on_map_point_clicked(self, data):
         self.show_temperature_data(address=data["Adresa"], axes=(self.x, self.y))
@@ -217,16 +233,7 @@ class IdeaWin(Gtk.Window):
 
     def apply_scale_moves(self, index):
         if self.last_slider_move_index == index:
-            self.apply_filters()
-
-    def apply_filters(self, *args):
-        greenery_range = (self.green_min_scale.get_value()/100, self.green_max_scale.get_value()/100)
-        altitude_range = (int(self.alt_min_scale.get_value()), int(self.alt_max_scale.get_value()))
-        self.show_temperature_data(
-            greenery_range=greenery_range,
-            altitude_range=altitude_range,
-            axes=(self.x, self.y),
-        )
+            self._plot()
 
     def show_temperature_data(self, **kwargs):
         print('Getting data...')
