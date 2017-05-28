@@ -85,6 +85,7 @@ class IdeaWin(Gtk.Window):
 
         self.tab_widget = Gtk.Notebook()
         self.filebox.pack_start(self.tab_widget, True, True, 0)
+        self.tab_widget.connect('switch-page', self._plot)
 
         address_scroll_window = Gtk.ScrolledWindow()
         address_scroll_window.add(self.filesystemTreeView)
