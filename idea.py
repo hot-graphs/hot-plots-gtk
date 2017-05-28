@@ -7,6 +7,7 @@ from gi.repository import GObject
 from physt.io import load_json
 import os
 from data_source import *
+import gtk
 from time import time
 from data_source import get_point_tree
 
@@ -111,7 +112,7 @@ class IdeaWin(Gtk.Window):
         hbox = Gtk.Box()
         row.add(vbox)
         vbox.pack_start(hbox, False, False, 0)
-        check = Gtk.CheckButton("Greenary Filter")
+        check = Gtk.CheckButton("Greenery Filter")
         hbox.pack_start(check, False, False, 0)
         inner_vbox = Gtk.VBox()
         vbox.pack_start(inner_vbox, False, False, 0)
@@ -120,8 +121,9 @@ class IdeaWin(Gtk.Window):
 
         ad1 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
         ad2 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
+        ad3 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
 
-        self.green_min_scale = Gtk.Scale(
+        self.green_min_scale = min_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL, adjustment=ad1)
         self.green_min_scale.set_valign(Gtk.Align.START)
         self.green_min_scale.set_digits(0)
@@ -141,6 +143,9 @@ class IdeaWin(Gtk.Window):
         inner_vbox.pack_start(slider_box, False, False, 15)
 
         slider_box.pack_start(self.green_max_scale, True, True, 0)
+        min_scale.set_digits(0)
+        min_scale.set_hexpand(True)
+        min_scale.connect("value-changed", self.scale_moved)
 
         row = Gtk.ListBoxRow()
         self.listbox.add(row)
@@ -208,6 +213,12 @@ class IdeaWin(Gtk.Window):
         data = get_temperature_data(address=data["Adresa"], axes=(self.x, self.y))
         self.show_data(data)
 
+    def scale_moved(self, widget):
+        greenery_range = (self.green_min_scale.get_value()/100, 1.0)
+        print(greenery_range)
+        data = get_temperature_data(greenery_range=greenery_range, axes=(self.x, self.y))
+        self.show_data(data)
+
     def show_data(self, data):
         plot_temperature_data(data, path="output.svg", width= 600, height=400)
         child = self.scrolledwindow.get_child()
@@ -226,9 +237,6 @@ class IdeaWin(Gtk.Window):
         self.map_controller.send_command(cmd='start')
 
     def on_button_toggled(self):
-        pass
-
-    def scale_moved(self, widget):
         pass
 
     def apply_filters(self, widget):
