@@ -186,7 +186,7 @@ def get_temperature_data(id=None, address=None, altitude_range=None, greenery_ra
     if month:
         data = data.select("month", month - 1)
         right_texts.append(MONTH_NAMES[month-1])
-    if hour:
+    if hour is not None:
         data = data.select("hour", hour)
         right_texts.append("{0}:00-{1}:00".format(hour, hour+1))
     right_text = ", ".join(right_texts)
