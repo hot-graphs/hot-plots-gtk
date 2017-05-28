@@ -361,7 +361,9 @@ class MapViewApp(App):
         VEJROSTOVA = {'zoom': 18, 'lat': 49.22025828658787, 'lon': 16.50821292434091}
         JINDRICHOVA = {'zoom': 18, 'lat': 49.213795607926734, 'lon': 16.58214582519531}
         BRNO = {'zoom': 13, 'lat': 49.205243666554054, 'lon': 16.58976135996045}
-        self.mapview = CustomMapView(**BRNO, radiuses=self.radiuses)
+        args = dict(BRNO)
+        args['radiuses'] = self.radiuses
+        self.mapview = CustomMapView(**args)
         self.points_iter = iter(enumerate(self.points.iterrows()))
         self.add_next_points()
         self.title = 'Temperature Map'
