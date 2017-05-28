@@ -172,27 +172,17 @@ class IdeaWin(Gtk.Window):
 
         filters_box.pack_start(Gtk.Box(), True, True, 100)
 
-        row = Gtk.ListBoxRow()
-        self.listbox.add(row)
-        interval_hbox = Gtk.Box()
-        label = Gtk.Label("X axis: ")
-        interval_hbox.pack_start(label, False, False, 0)
+        self.x_axis_tab_widget = Gtk.Notebook()
+        self.filebox.pack_start(self.tab_widget, True, True, 0)
+        self.x_axis_tab_widget .connect('switch-page', self._plot)
 
-        interval_store = Gtk.ListStore(str)
-        intervals = ["hour", "month"]
-        for interval in intervals:
-            interval_store.append([interval])
+        address_scroll_window = Gtk.ScrolledWindow()
+        address_scroll_window.add(self.filesystemTreeView)
+        self.x_axis_tab_widget .append_page(address_scroll_window, Gtk.Label('By Month'))
+        filters_box = Gtk.VBox()
+        self.x_axis_tab_widget.append_page(filters_box, Gtk.Label('By Hour'))
 
-        self.interval_combo = Gtk.ComboBox.new_with_model(interval_store)
-        self.interval_combo.set_active(0)
-
-        self.interval_combo.connect("changed", self.on_interval_combo_changed)
-        self.renderer_text = Gtk.CellRendererText()
-        self.interval_combo.pack_start(self.renderer_text, False)
-        self.interval_combo.add_attribute(self.renderer_text, "text", 0)
-        interval_hbox.pack_start(self.interval_combo, False, False, 0)
-
-        self.filebox.pack_end(interval_hbox, False, False, 0)
+        self.filebox.pack_end(self.x_axis_tab_widget , False, False, 0)
 
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
@@ -203,7 +193,14 @@ class IdeaWin(Gtk.Window):
 
         self.show_all()
 
+        self.x_axis_tab_widget.set_current_page(1)
+
     def _plot(self, *args):
+        print(self.x_axis_tab_widget.get_current_page())
+        if self.x_axis_tab_widget.get_current_page() == 1:
+            self.x = 'month'
+        else:
+            self.x = 'hour'
         if self.tab_widget.get_current_page() == 1:
             greenery_range = (
                 self.green_min_scale.get_value()/100,
