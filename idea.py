@@ -64,13 +64,33 @@ class IdeaWin(Gtk.Window):
         filesystemColumn = Gtk.TreeViewColumn("Files", renderer, text=0)
         self.filesystemTreeView.append_column(filesystemColumn)
 
+        self.listbox_addresses = Gtk.ListBox()
+        row = Gtk.ListBoxRow()
+        self.listbox_addresses.add(row)
+        self.filebox.pack_end(self.listbox_addresses, False, True, 0)
+        hbox = Gtk.Box()
+        row.add(hbox)
+
+        button1 = Gtk.RadioButton.new_from_widget(None)
+        button1.set_label("Address")
+        button1.connect("toggled", self.on_selector_button_toggled, "1")
+        hbox.pack_start(button1, False, False, 0)
+
+        button2 = Gtk.RadioButton.new_from_widget(button1)
+        button2.set_label("Filters")
+        button2.connect("toggled", self.on_selector_button_toggled, "2")
+        hbox.pack_start(button2, False, False, 0)
+
+        row = Gtk.ListBoxRow()
+        self.listbox_addresses.add(row)
+
         self.scrolledwindow_tree = Gtk.ScrolledWindow()
         self.scrolledwindow_tree.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
         self.outerbox.set_hexpand(False)
         self.outerbox.set_vexpand(True)
         self.scrolledwindow_tree.add(self.filesystemTreeView)
         self.filesystemTreeView.connect("row-activated", self.on_click)
-        #self.filebox.pack_start(self.scrolledwindow_tree, True, True, 0)
+        row.add(self.scrolledwindow_tree)
 
         self.graph_box = Gtk.VBox()
         self.mainbox.pack_start(self.graph_box, False, False, 0)
@@ -81,11 +101,12 @@ class IdeaWin(Gtk.Window):
         self.listbox = Gtk.ListBox()
         self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
         #self.opt_box.pack_start(self.listbox, False, False, 0)
-        self.filebox.pack_start(self.listbox, False, False, 0)
+        #self.filebox.pack_start(self.listbox, False, False, 0)
         row = Gtk.ListBoxRow()
         self.listbox.add(row)
         hbox = Gtk.Box()
         row.add(hbox)
+
         button1 = Gtk.RadioButton.new_from_widget(None)
         button1.set_label("Address")
         button1.connect("toggled", self.on_selector_button_toggled, "1")
@@ -276,7 +297,18 @@ class IdeaWin(Gtk.Window):
         pass
 
     def on_selector_button_toggled(self, widget, arg):
-        pass
+        if arg == "1":
+            children = self.filebox.get_children()
+            for child in children:
+                self.filebox.remove(child)
+            print(widget.get_active())
+            if widget.get_active():
+                self.filebox.pack_start(self.scrolledwindow_tree, True, True, 0)
+            else:
+                self.filebox.pack_start(self.listbox, True, True, 0)
+            self.show_all()
+
+
 
     def clean_up(self, *args):
         if self.map_controller:
