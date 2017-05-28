@@ -56,6 +56,7 @@ class IdeaWin(Gtk.Window):
         self.mainbox.pack_start(self.comparewindow, True, True, 0)
 
         self.filebox = Gtk.Box()
+        self.filebox.set_halign(Gtk.Align.END)
         self.mainbox.pack_end(self.filebox, False, False, 0)
 
         self.filesystemTreeStore = Gtk.TreeStore(str, str)
@@ -77,29 +78,17 @@ class IdeaWin(Gtk.Window):
         row = Gtk.ListBoxRow()
         self.listbox_addresses.add(row)
         self.filebox.pack_end(self.listbox_addresses, False, True, 0)
-        hbox = Gtk.Box()
-        row.add(hbox)
 
-        button1 = Gtk.RadioButton.new_from_widget(None)
-        button1.set_label("Address")
-        button1.connect("toggled", self.on_selector_button_toggled, "1")
-        hbox.pack_start(button1, False, False, 0)
+        self.tab_widget = Gtk.Notebook()
+        self.filebox.pack_start(self.tab_widget, True, True, 0)
 
-        button2 = Gtk.RadioButton.new_from_widget(button1)
-        button2.set_label("Filters")
-        button2.connect("toggled", self.on_selector_button_toggled, "2")
-        hbox.pack_start(button2, False, False, 0)
+        address_scroll_window = Gtk.ScrolledWindow()
+        address_scroll_window.add(self.filesystemTreeView)
+        self.tab_widget.append_page(address_scroll_window, Gtk.Label('Address'))
+        filters_box = Gtk.VBox()
+        self.tab_widget.append_page(filters_box, Gtk.Label('Filters'))
 
-        row = Gtk.ListBoxRow()
-        self.listbox_addresses.add(row)
-
-        self.scrolledwindow_tree = Gtk.ScrolledWindow()
-        self.scrolledwindow_tree.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
-        self.outerbox.set_hexpand(False)
-        self.outerbox.set_vexpand(True)
-        self.scrolledwindow_tree.add(self.filesystemTreeView)
         self.filesystemTreeView.connect("row-activated", self.on_click)
-        row.add(self.scrolledwindow_tree)
 
         self.graph_box = Gtk.VBox()
         self.mainbox.pack_start(self.graph_box, True, True, 0)
@@ -111,40 +100,11 @@ class IdeaWin(Gtk.Window):
         self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
         #self.opt_box.pack_start(self.listbox, False, False, 0)
         #self.filebox.pack_start(self.listbox, False, False, 0)
-        row = Gtk.ListBoxRow()
-        self.listbox.add(row)
-        hbox = Gtk.Box()
-        row.add(hbox)
 
-        button1 = Gtk.RadioButton.new_from_widget(None)
-        button1.set_label("Address")
-        button1.connect("toggled", self.on_selector_button_toggled, "1")
-        hbox.pack_start(button1, False, False, 0)
-        button1.connect('toggled', self._plot)
-
-        self.filters_button = button2 = Gtk.RadioButton.new_from_widget(button1)
-        button2.set_label("Filters")
-        button2.connect("toggled", self.on_selector_button_toggled, "2")
-        hbox.pack_start(button2, False, False, 0)
-        button2.connect('toggled', self._plot)
-
-
-        row = Gtk.ListBoxRow()
-        self.listbox.add(row)
-        vbox = Gtk.VBox()
-        hbox = Gtk.Box()
-        row.add(vbox)
-        vbox.pack_start(hbox, False, False, 0)
-        self.filter_select = check = Gtk.Label("Greenery Filter")
-        hbox.pack_start(check, False, False, 0)
-        inner_vbox = Gtk.VBox()
-        vbox.pack_start(inner_vbox, False, False, 0)
-        slider_box = Gtk.Box()
-        inner_vbox.pack_start(slider_box, False, False, 15)
+        filters_box.pack_start(Gtk.Label("Greenery Filter"), False, False, 0)
 
         ad1 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
         ad2 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
-        ad3 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
 
         self.green_min_scale = min_scale = Gtk.Scale(
             orientation=Gtk.Orientation.HORIZONTAL, adjustment=ad1)
@@ -161,34 +121,25 @@ class IdeaWin(Gtk.Window):
         self.green_max_scale.set_value(100)
         self.green_max_scale.connect("value-changed", self.scale_moved)
 
-        slider_box.pack_start(self.green_min_scale, True, True, 0)
+        filters_box.pack_start(self.green_min_scale, False, False, 0)
 
         self.last_slider_move_index = 0
         self.graph_id = 0
         self.run_id = random.randrange(9999, 10000)
         self.worker_process = None
 
-        slider_box = Gtk.Box()
-        inner_vbox.pack_start(slider_box, False, False, 15)
-
-        slider_box.pack_start(self.green_max_scale, True, True, 0)
+        filters_box.pack_start(self.green_max_scale, False, False, 0)
         min_scale.set_digits(0)
         min_scale.set_hexpand(True)
         min_scale.connect("value-changed", self.scale_moved)
 
+
+        filters_box.pack_start(Gtk.Box(), False, False, 20)
+
         row = Gtk.ListBoxRow()
         self.listbox.add(row)
-        vbox = Gtk.VBox()
-        hbox = Gtk.Box()
-        row.add(vbox)
-        vbox.pack_start(hbox, False, False, 0)
         checkbox = Gtk.Label("Altitude Filter")
-        hbox.pack_start(checkbox, False, False, 0)
-
-        inner_vbox = Gtk.VBox()
-        vbox.pack_start(inner_vbox, False, False, 0)
-        slider_box = Gtk.Box()
-        inner_vbox.pack_start(slider_box, False, False, 15)
+        filters_box.pack_start(checkbox, False, False, 0)
 
         ad1 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
         ad2 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
@@ -211,12 +162,10 @@ class IdeaWin(Gtk.Window):
         self.alt_max_scale.set_value(400)
         self.alt_max_scale.connect("value-changed", self.scale_moved)
 
-        slider_box.pack_start(self.alt_min_scale, True, True, 0)
+        filters_box.pack_start(self.alt_min_scale, False, False, 0)
+        filters_box.pack_start(self.alt_max_scale, False, False, 0)
 
-        slider_box = Gtk.Box()
-        inner_vbox.pack_start(slider_box, False, False, 15)
-
-        slider_box.pack_start(self.alt_max_scale, True, True, 0)
+        filters_box.pack_start(Gtk.Box(), True, True, 100)
 
         row = Gtk.ListBoxRow()
         self.listbox.add(row)
@@ -251,7 +200,7 @@ class IdeaWin(Gtk.Window):
         self.show_all()
 
     def _plot(self, *args):
-        if self.filters_button.get_active():
+        if self.tab_widget.get_current_page() == 1:
             greenery_range = (
                 self.green_min_scale.get_value()/100,
                 self.green_max_scale.get_value()/100,
@@ -356,20 +305,6 @@ class IdeaWin(Gtk.Window):
                 click_callback=self.on_map_point_clicked,
             )
         self.map_controller.send_command(cmd='start')
-
-    def on_selector_button_toggled(self, widget, arg):
-        if arg == "1":
-            children = self.filebox.get_children()
-            for child in children:
-                self.filebox.remove(child)
-            print(widget.get_active())
-            if widget.get_active():
-                self.filebox.pack_start(self.scrolledwindow_tree, True, True, 0)
-            else:
-                self.filebox.pack_start(self.listbox, True, True, 0)
-            self.show_all()
-
-
 
     def clean_up(self, *args):
         if self.map_controller:
