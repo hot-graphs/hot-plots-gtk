@@ -174,13 +174,24 @@ class Tooltip(Widget):
             self.stencil_rect = graphics.Rectangle(pos=pos, size=(200, 5))
             graphics.StencilUse()
             graphics.Color(1, 1, 1/2, 0.8)
-            self.bg_rect = graphics.Rectangle(pos=pos, size=(100, 80))
+            self.bg_rect = graphics.Rectangle(pos=pos, size=(100, 100))
+            graphics.Color(*marker.outer_ring_color)
+            graphics.Ellipse(pos=(8+8, 15+8), size=(10, 10))
             graphics.PopMatrix()
             graphics.Color(0, 0, 0, 1)
 
-        self.label = Label(text=marker.row['Adresa'], pos=(5, 5), color=(0, 0, 0, 1))
+        self.label = Label(
+            text='[b]{}[/b]'.format(marker.row['Adresa']), markup=True,
+            pos=(5, 5), color=(0, 0, 0, 1),
+        )
+        self.label2 = Label(
+            text='{:+.2f}°C from average'.format(marker.row['difftemp']),
+            pos=(5, 5), color=(0, 0, 0, 1),
+        )
         self.add_widget(self.label)
+        self.add_widget(self.label2)
         self.label.bind(texture_size=self.resize_text)
+        self.label2.bind(texture_size=self.resize_text)
 
         with self.canvas.after:
             graphics.StencilUnUse()
@@ -189,7 +200,7 @@ class Tooltip(Widget):
 
     def open(self):
         sz = self.stencil_rect.size[0]
-        Animation(size=(sz, 40), duration=0.1).start(self.stencil_rect)
+        Animation(size=(sz, 80), duration=0.1).start(self.stencil_rect)
 
     def close(self):
         sz = self.stencil_rect.size[0]
@@ -197,18 +208,26 @@ class Tooltip(Widget):
         anim.start(self.stencil_rect)
 
     def resize_text(self, *args):
-        self.label.width = self.label.texture_size[0]
+        l1w, l1h = self.label.texture_size
+        l2w, l2h = self.label2.texture_size
+        lw = max(l1w, l2w + 20)
+        lh = l1h + l2h
+        self.label.width = l1w
         self.label.height = 20
+        self.label2.width = l2w
+        self.label2.height = 20
         self.bg_rect.size = (
-            self.label.texture_size[0] + 10,
-            self.label.texture_size[1] + 10,
+            lw + 10,
+            lh + 10,
         )
+        self.reposition()
 
     def reposition(self, *args):
         parent = self.parent
         if parent:
             self.translation.xy = parent.pos
-            self.label.pos = parent.x + 13, parent.y + 18
+            self.label.pos = parent.x + 13, parent.y + 18 + self.label2.texture_size[1]
+            self.label2.pos = parent.x + 33, parent.y + 18
 
     def collide_point(self, x, y):
         return False
@@ -239,6 +258,7 @@ class CustomMapMarker(MapMarker):
             hsz = -sz/2
             graphics.Ellipse(size=(sz, sz), pos=(hsz, hsz))
 
+            self.outer_ring_color = None
             n = len(columns)
             for pos, r in enumerate(reversed(columns)):
                 value = self.row[str(r)]
@@ -251,6 +271,8 @@ class CustomMapMarker(MapMarker):
                 if value:
                     graphics.Color(*params['rgba'])
                     graphics.Ellipse(size=(sz, sz), pos=(hsz, hsz), angle_end=params.get('end', 360))
+                if self.outer_ring_color is None:
+                    self.outer_ring_color = params['rgba']
             graphics.PopMatrix()
         self.bind(pos=self.reposition)
         self.set_active(False)
@@ -383,7 +405,7 @@ def main():
     adresace = pandas.read_csv('teplarny-adresace-teplota.csv', sep=';').set_index(['GPS lat', 'GPS lon'])
     radiuses = [str(r) for r in radiuses]
     columns = radiuses + ['avgtemp']
-    points = adresace.loc[:, columns + ['Adresa']].drop_duplicates()
+    points = adresace.loc[:, columns + ['Adresa', 'difftemp']].drop_duplicates()
     MapViewApp(points, radiuses, columns).run()
 
 if __name__ == '__main__':
