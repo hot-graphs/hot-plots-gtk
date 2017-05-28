@@ -1,4 +1,4 @@
-idea module
+Application
 ===========
 
 .. automodule:: idea

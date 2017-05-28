@@ -12,15 +12,8 @@ class MapController:
         self.process = None
         self.click_callback = click_callback
 
-        self.start_lock = threading.Lock()
-        self.start_lock.acquire()
+        self.ensure_process()
 
-        thread = threading.Thread(target=self.input_thread)
-        thread.daemon = True
-        thread.start()
-
-        self.start_lock.acquire()
-        self.start_lock.release()
 
     def send_command(self, **kwargs):
         proc = self.ensure_process()
@@ -41,6 +34,17 @@ class MapController:
             )
             self.process_stdin = io.TextIOWrapper(self.process.stdin)
             self.process_stdout = io.TextIOWrapper(self.process.stdout)
+
+            self.start_lock = threading.Lock()
+            self.start_lock.acquire()
+
+            thread = threading.Thread(target=self.input_thread)
+            thread.daemon = True
+            thread.start()
+
+            self.start_lock.acquire()
+            self.start_lock.release()
+
         return self.process
 
     def input_thread(self):

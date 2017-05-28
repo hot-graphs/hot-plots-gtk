@@ -25,6 +25,7 @@ class IdeaWin(Gtk.Window):
         self.outerbox.set_vexpand(True)
         self.toolbox = Gtk.Box()
         self.outerbox.pack_start(self.toolbox, False, False, 0)
+        self.set_icon_from_file("logo.png")
 
         button1 = Gtk.RadioButton.new_from_widget(None)
         button1.set_label("Single sensor")
@@ -36,7 +37,7 @@ class IdeaWin(Gtk.Window):
         button2.connect("toggled", self.on_button_toggled, "2")
         self.toolbox.pack_start(button2, False, False, 0)
 
-        self.map_button = Gtk.Button(label="Open Map")
+        self.map_button = Gtk.Button(label="Choose on Map")
         self.map_button.connect("clicked", self.on_map_button_clicked)
         self.toolbox.pack_end(self.map_button, False, False, 0)
 
@@ -114,7 +115,7 @@ class IdeaWin(Gtk.Window):
         inner_vbox = Gtk.VBox()
         vbox.pack_start(inner_vbox, False, False, 0)
         slider_box = Gtk.Box()
-        inner_vbox.pack_start(slider_box, False, False, 50)
+        inner_vbox.pack_start(slider_box, False, False, 15)
 
         ad1 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
         ad2 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
@@ -138,6 +139,13 @@ class IdeaWin(Gtk.Window):
 
     def _plot(self):
         data = get_temperature_data(id=self.gr_id, axes=(self.x, self.y))
+        self.show_data(data)
+
+    def on_map_point_clicked(self, data):
+        data = get_temperature_data(address=data["Adresa"], axes=(self.x, self.y))
+        self.show_data(data)
+
+    def show_data(self, data):
         plot_temperature_data(data, path="output.svg", width= 600, height=400)
         child = self.scrolledwindow.get_child()
         if child:
@@ -148,9 +156,10 @@ class IdeaWin(Gtk.Window):
 
     def on_map_button_clicked(self, widget):
         from map_controller import MapController
-        self.map_controller = MapController(
-            click_callback=lambda data: print('gtk got:', data),
-        )
+        if not self.map_controller:
+            self.map_controller = MapController(
+                click_callback=self.on_map_point_clicked,
+            )
         self.map_controller.send_command(cmd='start')
 
     def on_button_toggled(self):
