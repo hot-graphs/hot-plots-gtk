@@ -142,6 +142,50 @@ class IdeaWin(Gtk.Window):
 
         slider_box.pack_start(self.green_max_scale, True, True, 0)
 
+        row = Gtk.ListBoxRow()
+        self.listbox.add(row)
+        vbox = Gtk.VBox()
+        hbox = Gtk.Box()
+        row.add(vbox)
+        vbox.pack_start(hbox, False, False, 0)
+        check = Gtk.CheckButton("Altitude Filter")
+        hbox.pack_start(check, False, False, 0)
+
+        button_box = Gtk.Box()
+        inner_vbox.pack_start(button_box, False, False, 15)
+        button = Gtk.Button(label="Apply Changes")
+        button_box.pack_end(button, False, False, 5)
+        button.connect("clicked", self.apply_filters)
+
+        inner_vbox = Gtk.VBox()
+        vbox.pack_start(inner_vbox, False, False, 0)
+        slider_box = Gtk.Box()
+        inner_vbox.pack_start(slider_box, False, False, 15)
+
+        ad1 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
+        ad2 = Gtk.Adjustment(0, 0, 100, 5, 10, 0)
+
+        self.alt_min_scale = Gtk.Scale(
+            orientation=Gtk.Orientation.HORIZONTAL, adjustment=ad1)
+        self.alt_min_scale.set_valign(Gtk.Align.START)
+        self.alt_min_scale.set_digits(0)
+        self.alt_min_scale.set_hexpand(True)
+        self.alt_min_scale.connect("value-changed", self.scale_moved)
+
+        self.alt_max_scale = Gtk.Scale(
+            orientation=Gtk.Orientation.HORIZONTAL, adjustment=ad2)
+        self.alt_max_scale.set_valign(Gtk.Align.START)
+        self.alt_max_scale.set_digits(0)
+        self.alt_max_scale.set_hexpand(True)
+        self.alt_max_scale.connect("value-changed", self.scale_moved)
+
+        slider_box.pack_start(self.alt_min_scale, True, True, 0)
+
+        slider_box = Gtk.Box()
+        inner_vbox.pack_start(slider_box, False, False, 15)
+
+        slider_box.pack_start(self.alt_max_scale, True, True, 0)
+
         button_box = Gtk.Box()
         inner_vbox.pack_start(button_box, False, False, 15)
         button = Gtk.Button(label="Apply Changes")
