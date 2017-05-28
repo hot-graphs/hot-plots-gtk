@@ -113,7 +113,7 @@ class IdeaWin(Gtk.Window):
         hbox = Gtk.Box()
         row.add(vbox)
         vbox.pack_start(hbox, False, False, 0)
-        check = Gtk.CheckButton("Greenery Filter")
+        check = Gtk.Label("Greenery Filter (%)")
         hbox.pack_start(check, False, False, 0)
         inner_vbox = Gtk.VBox()
         vbox.pack_start(inner_vbox, False, False, 0)
@@ -157,14 +157,8 @@ class IdeaWin(Gtk.Window):
         hbox = Gtk.Box()
         row.add(vbox)
         vbox.pack_start(hbox, False, False, 0)
-        check = Gtk.CheckButton("Altitude Filter")
+        check = Gtk.Label("Altitude Filter (m)")
         hbox.pack_start(check, False, False, 0)
-
-        button_box = Gtk.Box()
-        inner_vbox.pack_start(button_box, False, False, 15)
-        button = Gtk.Button(label="Apply Changes")
-        button_box.pack_end(button, False, False, 5)
-        button.connect("clicked", self.apply_filters)
 
         inner_vbox = Gtk.VBox()
         vbox.pack_start(inner_vbox, False, False, 0)
@@ -179,6 +173,8 @@ class IdeaWin(Gtk.Window):
         self.alt_min_scale.set_valign(Gtk.Align.START)
         self.alt_min_scale.set_digits(0)
         self.alt_min_scale.set_hexpand(True)
+        self.alt_min_scale.set_range(200, 400)
+        self.alt_min_scale.set_value(200)
         self.alt_min_scale.connect("value-changed", self.scale_moved)
 
         self.alt_max_scale = Gtk.Scale(
@@ -186,6 +182,8 @@ class IdeaWin(Gtk.Window):
         self.alt_max_scale.set_valign(Gtk.Align.START)
         self.alt_max_scale.set_digits(0)
         self.alt_max_scale.set_hexpand(True)
+        self.alt_max_scale.set_range(200, 400)
+        self.alt_max_scale.set_value(400)
         self.alt_max_scale.connect("value-changed", self.scale_moved)
 
         slider_box.pack_start(self.alt_min_scale, True, True, 0)
@@ -194,12 +192,6 @@ class IdeaWin(Gtk.Window):
         inner_vbox.pack_start(slider_box, False, False, 15)
 
         slider_box.pack_start(self.alt_max_scale, True, True, 0)
-
-        button_box = Gtk.Box()
-        inner_vbox.pack_start(button_box, False, False, 15)
-        button = Gtk.Button(label="Apply Changes")
-        button_box.pack_end(button, False, False, 5)
-        button.connect("clicked", self.apply_filters)
 
         self.scrolledwindow = Gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
@@ -227,9 +219,13 @@ class IdeaWin(Gtk.Window):
 
     def apply_filters(self):
         greenery_range = (self.green_min_scale.get_value()/100, self.green_max_scale.get_value()/100)
-        ranges = greenery_range
-        print('apply', greenery_range)
-        data = get_temperature_data(greenery_range=greenery_range, axes=(self.x, self.y))
+        altitude_range = (int(self.alt_min_scale.get_value()), int(self.alt_max_scale.get_value()))
+        print('apply', greenery_range, altitude_range)
+        data = get_temperature_data(
+            greenery_range=greenery_range,
+            altitude_range=altitude_range,
+            axes=(self.x, self.y),
+        )
         print('applied')
         self.show_data(data)
 
